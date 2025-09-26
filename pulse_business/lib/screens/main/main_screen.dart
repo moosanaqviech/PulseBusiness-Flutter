@@ -5,16 +5,12 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../utils/theme.dart';
-<<<<<<< HEAD
-import '../qr_scanner/qr_scanner_tab.dart';
-import 'smart_templates_tab.dart';
-import 'enhanced_create_deal_tab.dart';
-=======
 import 'dashboard_tab.dart';
 import 'create_deal_tab.dart';
->>>>>>> parent of 8f2418c (Major Changes Analytics/Profile etc)
+import 'enhanced_create_deal_tab.dart';
 import 'my_deals_tab.dart';
-import '../settings_screen.dart';
+import '../qr_scanner/qr_scanner_tab.dart';
+import 'smart_templates_tab.dart'; // NEW
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -42,7 +38,7 @@ class _MainScreenState extends State<MainScreen> {
     const EnhancedCreateDealTab(),    // ENHANCED - templates integration
     const QRScannerScreen(),               // EXISTING - Your scanner tab
     const MyDealsTab(),               // EXISTING
-    const SettingsScreen(),           // EXISTING
+    //const SettingsScreen(),           // EXISTING
   ];
 
   @override
@@ -180,7 +176,7 @@ class _MainScreenState extends State<MainScreen> {
         },
       ),
       bottomNavigationBar: _buildBottomNavigationBar(),
-      floatingActionButton: _buildFloatingActionButton(),
+      //floatingActionButton: _buildFloatingActionButton(),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
@@ -239,14 +235,7 @@ class _MainScreenState extends State<MainScreen> {
           ),
         ];
       
-      case 1: // Create Deal tab
-        return [
-          IconButton(
-            onPressed: _showCreateDealHelp,
-            icon: const Icon(Icons.help_outline),
-            tooltip: 'Help',
-          ),
-        ];
+     
       
       case 2: // Scanner tab
         return [
@@ -254,20 +243,6 @@ class _MainScreenState extends State<MainScreen> {
             onPressed: _showScannerHelp,
             icon: const Icon(Icons.help_outline),
             tooltip: 'Scanner Help',
-          ),
-        ];
-      
-      case 3: // My Deals tab
-        return [
-          IconButton(
-            onPressed: _showDealFilters,
-            icon: const Icon(Icons.filter_list),
-            tooltip: 'Filter Deals',
-          ),
-          IconButton(
-            onPressed: _showDealSearch,
-            icon: const Icon(Icons.search),
-            tooltip: 'Search Deals',
           ),
         ];
       
@@ -315,20 +290,8 @@ class _MainScreenState extends State<MainScreen> {
     );
   }
 
-  Widget? _buildFloatingActionButton() {
-    // Show quick create FAB on templates and my deals tabs
-    if (_currentIndex == 0 || _currentIndex == 3) {
-      return FloatingActionButton(
-        onPressed: _quickCreateDeal,
-        backgroundColor: Colors.green,
-        child: const Icon(Icons.add, color: Colors.white),
-        tooltip: 'Quick Create Deal',
-      );
-    }
-    return null;
-  }
+  
 
-<<<<<<< HEAD
   // Action handlers
   void _showNotifications() {
     showDialog(
@@ -342,25 +305,16 @@ class _MainScreenState extends State<MainScreen> {
             child: const Text('OK'),
           ),
         ],
-=======
-  void _showNotifications() {
-    // TODO: Show notifications
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Notifications feature coming soon'),
-        backgroundColor: Colors.blue,
->>>>>>> parent of 8f2418c (Major Changes Analytics/Profile etc)
       ),
     );
   }
+
+
 
   void _handleMenuSelection(String value) {
     switch (value) {
       case 'analytics':
         Navigator.pushNamed(context, '/template-analytics');
-        break;
-      case 'help':
-        _showTemplateHelp();
         break;
       case 'profile':
         Navigator.pushNamed(context, '/business-profile');
@@ -379,18 +333,7 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
-<<<<<<< HEAD
-  void _showTemplateHelp() {
-=======
-  void _navigateToBusinessProfile() {
-    // TODO: Navigate to business profile screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Business profile feature coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
+ 
 
   void _showAnalytics() {
     // TODO: Navigate to analytics screen
@@ -410,130 +353,6 @@ class _MainScreenState extends State<MainScreen> {
         backgroundColor: Colors.blue,
       ),
     );
-  }
-
-  void _showHelp() {
->>>>>>> parent of 8f2418c (Major Changes Analytics/Profile etc)
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Smart Templates Help'),
-        content: const SingleChildScrollView(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                'Smart Templates help you create high-performing deals:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 12),
-              Text('🎯 AI Recommendations - Get personalized suggestions based on your business data'),
-              SizedBox(height: 8),
-              Text('⚡ Quick Creation - Create professional deals in under 60 seconds'),
-              SizedBox(height: 8),
-              Text('📊 Performance Tracking - See which templates work best for you'),
-              SizedBox(height: 8),
-              Text('🔧 Smart Customization - Templates adapt to your business category'),
-              SizedBox(height: 12),
-              Text(
-                'Tips for Success:',
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              SizedBox(height: 8),
-              Text('• Start with recommended templates for best results'),
-              SizedBox(height: 4),
-              Text('• Customize prices to match your business model'),
-              SizedBox(height: 4),
-              Text('• Use seasonal templates during relevant periods'),
-              SizedBox(height: 4),
-              Text('• Check analytics to optimize future deals'),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Got It'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showCreateDealHelp() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create Deal Help'),
-        content: const Text(
-          'Choose between Smart Templates for proven performance or Custom Creation for full control. '
-          'Templates typically perform 31% better than custom deals.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Got It'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _showDealFilters() {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text(
-              'Filter Deals',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.all_inclusive),
-              title: const Text('All Deals'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.play_circle),
-              title: const Text('Active Deals'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.pause_circle),
-              title: const Text('Paused Deals'),
-              onTap: () => Navigator.pop(context),
-            ),
-            ListTile(
-              leading: const Icon(Icons.schedule),
-              title: const Text('Expiring Soon'),
-              onTap: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showDealSearch() {
-    showSearch(
-      context: context,
-      delegate: DealSearchDelegate(),
-    );
-  }
-
-  void _quickCreateDeal() {
-    // Navigate to create deal tab with template selection
-    setState(() {
-      _currentIndex = 1;
-      _pageController.animateToPage(1,
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut);
-    });
   }
 
   void _showScannerHelp() {

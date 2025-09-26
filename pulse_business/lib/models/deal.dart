@@ -19,6 +19,8 @@ class Deal {
   final int claimCount;
   final String status;
   final String? termsAndConditions;
+  final DateTime? startTime;  // null means start immediately
+  final bool isScheduled;   
 
   Deal({
     this.id,
@@ -41,6 +43,9 @@ class Deal {
     this.claimCount = 0,
     this.status = 'active',
     this.termsAndConditions,
+    this.startTime,
+    this.isScheduled = false,
+    
   }) : 
     remainingQuantity = remainingQuantity ?? totalQuantity,
     createdAt = createdAt ?? DateTime.now();
@@ -67,6 +72,8 @@ class Deal {
       claimCount: map['claimCount'] ?? 0,
       status: map['status'] ?? 'active',
       termsAndConditions: map['termsAndConditions'],
+       startTime: map['startTime'] != null ? DateTime.parse(map['startTime']) : null,
+      isScheduled: map['isScheduled'] ?? false,
     );
   }
 
@@ -91,6 +98,8 @@ class Deal {
       'claimCount': claimCount,
       'status': status,
       'termsAndConditions': termsAndConditions,
+      'startTime': startTime?.toIso8601String(),
+      'isScheduled': isScheduled,
     };
   }
 
@@ -127,6 +136,8 @@ class Deal {
     if (viewCount == 0) return 0.0;
     return (claimCount / viewCount) * 100;
   }
+
+ bool get shouldStartNow => startTime == null || DateTime.now().isAfter(startTime!);
 
   Deal copyWith({
     String? id,

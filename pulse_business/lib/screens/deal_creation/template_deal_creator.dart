@@ -41,6 +41,8 @@ class _TemplateDealCreatorState extends State<TemplateDealCreator> {
   late final TextEditingController _termsController;
   
   late DateTime _expirationTime;
+  late DateTime? _startTime;
+  bool isScheduled = false;
   File? _selectedImage;
   bool _isCustomizing = false;
   
@@ -70,6 +72,8 @@ class _TemplateDealCreatorState extends State<TemplateDealCreator> {
       text: templateDeal.termsAndConditions ?? '',
     );
     _expirationTime = templateDeal.expirationTime;
+    _startTime = templateDeal.startTime;
+    isScheduled = templateDeal.isScheduled;
   }
   
   @override
@@ -873,6 +877,108 @@ class _TemplateDealCreatorState extends State<TemplateDealCreator> {
     }
   }
 
+  Widget _buildStartTimeSection() {
+  bool _scheduleForLater = false;
+  DateTime? _customStartTime;
+  
+  return Card(
+    child: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Deal Start Time',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          
+          SwitchListTile(
+            title: const Text('Schedule for later'),
+            subtitle: Text(_scheduleForLater 
+                ? 'Deal will start at scheduled time'
+                : 'Deal starts immediately when created'),
+            value: _scheduleForLater,
+            onChanged: (value) {
+              setState(() {
+                _scheduleForLater = value;
+                if (!value) {
+                  _customStartTime = null;
+                } else {
+                  _customStartTime = DateTime.now().add(const Duration(hours: 1));
+                }
+              });
+            },
+          ),
+          
+          if (_scheduleForLater) ...[
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: _customStartTime ?? DateTime.now().add(const Duration(hours: 1)),
+                        firstDate: DateTime.now(),
+                        lastDate: DateTime.now().add(const Duration(days: 30)),
+                      );
+                      if (date != null) {
+                        setState(() {
+                          _customStartTime = DateTime(
+                            date.year, date.month, date.day,
+                            _customStartTime?.hour ?? DateTime.now().hour + 1,
+                            _customStartTime?.minute ?? DateTime.now().minute,
+                          );
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.calendar_today),
+                    label: Text(_customStartTime != null
+                        ? DateFormat('MMM dd').format(_customStartTime!)
+                        : 'Pick Date'),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: _customStartTime != null
+                            ? TimeOfDay.fromDateTime(_customStartTime!)
+                            : TimeOfDay.now(),
+                      );
+                      if (time != null) {
+                        setState(() {
+                          final now = DateTime.now();
+                          _customStartTime = DateTime(
+                            _customStartTime?.year ?? now.year,
+                            _customStartTime?.month ?? now.month,
+                            _customStartTime?.day ?? now.day,
+                            time.hour,
+                            time.minute,
+                          );
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.access_time),
+                    label: Text(_customStartTime != null
+                        ? DateFormat('h:mm a').format(_customStartTime!)
+                        : 'Pick Time'),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    ),
+  );
+}
   Future<void> _createDeal() async {
     if (!_formKey.currentState!.validate()) {
       setState(() => _isCustomizing = true);
@@ -899,6 +1005,8 @@ class _TemplateDealCreatorState extends State<TemplateDealCreator> {
         termsAndConditions: _termsController.text.trim().isEmpty 
             ? null 
             : _termsController.text.trim(),
+
+        
       );
       
       // Track customizations for analytics

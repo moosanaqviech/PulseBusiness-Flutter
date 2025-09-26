@@ -91,8 +91,10 @@ abstract class BaseTemplate implements DealTemplate {
       'Clear terms and conditions build trust',
     ];
   }
-}
 
+  
+}
+ 
 // Template Performance Data
 class TemplatePerformanceData {
   final String templateId;
@@ -196,7 +198,7 @@ class HappyHourTemplate extends BaseTemplate {
   List<String> get targetBusinessTypes => ['restaurant', 'cafe', 'bar'];
   
   @override
-  Deal generateDeal(Business business) {
+  Deal generateDeal(Business business, {DateTime? customStartTime}) {
     final defaults = getSmartDefaults(business);
     final basePrice = _calculateBasePrice(business);
     
@@ -213,6 +215,8 @@ class HappyHourTemplate extends BaseTemplate {
       businessName: business.name,
       expirationTime: _getNextHappyHourTime(),
       termsAndConditions: 'Valid Monday-Friday 4-7 PM only. Dine-in only. Cannot be combined with other offers.',
+      startTime: customStartTime,  
+      isScheduled: customStartTime != null,
     );
   }
   
@@ -301,7 +305,7 @@ class BOGOTemplate extends BaseTemplate {
   List<String> get targetBusinessTypes => ['cafe', 'shop', 'restaurant'];
   
   @override
-  Deal generateDeal(Business business) {
+  Deal generateDeal(Business business, {DateTime? customStartTime}) {
     final basePrice = _calculateBasePrice(business);
     
     return Deal(
@@ -315,6 +319,8 @@ class BOGOTemplate extends BaseTemplate {
       totalQuantity: 15,
       businessId: business.id!,
       businessName: business.name,
+      startTime: customStartTime,
+      isScheduled: customStartTime != null,
       expirationTime: DateTime.now().add(Duration(days: 7)),
       termsAndConditions: 'Free item must be of equal or lesser value. One per customer. Cannot be combined with other offers.',
     );
@@ -379,7 +385,7 @@ class FlashSaleTemplate extends BaseTemplate {
   List<String> get targetBusinessTypes => ['shop', 'restaurant', 'cafe'];
   
   @override
-  Deal generateDeal(Business business) {
+  Deal generateDeal(Business business,  {DateTime? customStartTime}) {
     final basePrice = _calculateBasePrice(business);
     
     return Deal(
@@ -393,6 +399,8 @@ class FlashSaleTemplate extends BaseTemplate {
       totalQuantity: 10, // Limited quantity for urgency
       businessId: business.id!,
       businessName: business.name,
+       startTime: customStartTime,  
+      isScheduled: customStartTime != null,
       expirationTime: DateTime.now().add(Duration(hours: 4)),
       termsAndConditions: 'Extremely limited time. While supplies last. No rain checks.',
     );
@@ -451,7 +459,7 @@ class FirstTimeCustomerTemplate extends BaseTemplate {
   List<String> get targetBusinessTypes => [];
   
   @override
-  Deal generateDeal(Business business) {
+  Deal generateDeal(Business business,  {DateTime? customStartTime}) {
     final basePrice = _calculateBasePrice(business);
     
     return Deal(
@@ -465,6 +473,8 @@ class FirstTimeCustomerTemplate extends BaseTemplate {
       totalQuantity: 25,
       businessId: business.id!,
       businessName: business.name,
+       startTime: customStartTime,  
+      isScheduled: customStartTime != null,
       expirationTime: DateTime.now().add(Duration(days: 30)),
       termsAndConditions: 'Valid for first-time customers only. ID may be required for verification.',
     );
@@ -524,7 +534,7 @@ class WeekendSpecialTemplate extends BaseTemplate {
   List<String> get targetBusinessTypes => ['restaurant', 'activity', 'cafe'];
   
   @override
-  Deal generateDeal(Business business) {
+  Deal generateDeal(Business business,  {DateTime? customStartTime}) {
     final basePrice = _calculateBasePrice(business);
     
     return Deal(
@@ -538,6 +548,8 @@ class WeekendSpecialTemplate extends BaseTemplate {
       totalQuantity: 20,
       businessId: business.id!,
       businessName: business.name,
+       startTime: customStartTime,  
+      isScheduled: customStartTime != null,
       expirationTime: _getNextSundayEvening(),
       termsAndConditions: 'Valid Saturday and Sunday only. Cannot be combined with other weekend offers.',
     );

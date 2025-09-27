@@ -1,0 +1,176 @@
+class Deal {
+  final String? id;
+  final String title;
+  final String description;
+  final String category;
+  final double latitude;
+  final double longitude;
+  final double originalPrice;
+  final double dealPrice;
+  final int totalQuantity;
+  final int remainingQuantity;
+  final String businessId;
+  final String businessName;
+  final DateTime createdAt;
+  final DateTime expirationTime;
+  final String? imageUrl;
+  final bool isActive;
+  final int viewCount;
+  final int claimCount;
+  final String status;
+  final String? termsAndConditions;
+
+  Deal({
+    this.id,
+    required this.title,
+    required this.description,
+    required this.category,
+    required this.latitude,
+    required this.longitude,
+    required this.originalPrice,
+    required this.dealPrice,
+    required this.totalQuantity,
+    int? remainingQuantity,
+    required this.businessId,
+    required this.businessName,
+    DateTime? createdAt,
+    required this.expirationTime,
+    this.imageUrl,
+    this.isActive = true,
+    this.viewCount = 0,
+    this.claimCount = 0,
+    this.status = 'active',
+    this.termsAndConditions,
+  }) : 
+    remainingQuantity = remainingQuantity ?? totalQuantity,
+    createdAt = createdAt ?? DateTime.now();
+
+  factory Deal.fromMap(Map<String, dynamic> map, {String? id}) {
+    return Deal(
+      id: id,
+      title: map['title'] ?? '',
+      description: map['description'] ?? '',
+      category: map['category'] ?? '',
+      latitude: (map['latitude'] ?? 0.0).toDouble(),
+      longitude: (map['longitude'] ?? 0.0).toDouble(),
+      originalPrice: (map['originalPrice'] ?? 0.0).toDouble(),
+      dealPrice: (map['dealPrice'] ?? 0.0).toDouble(),
+      totalQuantity: map['totalQuantity'] ?? 0,
+      remainingQuantity: map['remainingQuantity'] ?? 0,
+      businessId: map['businessId'] ?? '',
+      businessName: map['businessName'] ?? '',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
+      expirationTime: DateTime.fromMillisecondsSinceEpoch(map['expirationTime'] ?? 0),
+      imageUrl: map['imageUrl'],
+      isActive: map['isActive'] ?? true,
+      viewCount: map['viewCount'] ?? 0,
+      claimCount: map['claimCount'] ?? 0,
+      status: map['status'] ?? 'active',
+      termsAndConditions: map['termsAndConditions'],
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'title': title,
+      'description': description,
+      'category': category,
+      'latitude': latitude,
+      'longitude': longitude,
+      'originalPrice': originalPrice,
+      'dealPrice': dealPrice,
+      'totalQuantity': totalQuantity,
+      'remainingQuantity': remainingQuantity,
+      'businessId': businessId,
+      'businessName': businessName,
+      'createdAt': createdAt.millisecondsSinceEpoch,
+      'expirationTime': expirationTime.millisecondsSinceEpoch,
+      'imageUrl': imageUrl,
+      'isActive': isActive,
+      'viewCount': viewCount,
+      'claimCount': claimCount,
+      'status': status,
+      'termsAndConditions': termsAndConditions,
+    };
+  }
+
+  // Utility methods
+  int get discountPercentage {
+    if (originalPrice <= 0) return 0;
+    return (((originalPrice - dealPrice) / originalPrice) * 100).round();
+  }
+
+  bool get isExpired => DateTime.now().isAfter(expirationTime);
+
+  bool get isSoldOut => remainingQuantity <= 0;
+
+  String get formattedExpirationTime {
+    return '${expirationTime.day}/${expirationTime.month}/${expirationTime.year} ${expirationTime.hour}:${expirationTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  String get timeRemaining {
+    final now = DateTime.now();
+    if (now.isAfter(expirationTime)) return 'Expired';
+    
+    final diff = expirationTime.difference(now);
+    final hours = diff.inHours;
+    final minutes = diff.inMinutes % 60;
+    
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    } else {
+      return '${minutes}m';
+    }
+  }
+
+  double get conversionRate {
+    if (viewCount == 0) return 0.0;
+    return (claimCount / viewCount) * 100;
+  }
+
+  Deal copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? category,
+    double? latitude,
+    double? longitude,
+    double? originalPrice,
+    double? dealPrice,
+    int? totalQuantity,
+    int? remainingQuantity,
+    String? businessId,
+    String? businessName,
+    DateTime? createdAt,
+    DateTime? expirationTime,
+    String? imageUrl,
+    bool? isActive,
+    int? viewCount,
+    int? claimCount,
+    String? status,
+    String? termsAndConditions,
+  }) {
+    return Deal(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      category: category ?? this.category,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      originalPrice: originalPrice ?? this.originalPrice,
+      dealPrice: dealPrice ?? this.dealPrice,
+      totalQuantity: totalQuantity ?? this.totalQuantity,
+      remainingQuantity: remainingQuantity ?? this.remainingQuantity,
+      businessId: businessId ?? this.businessId,
+      businessName: businessName ?? this.businessName,
+      createdAt: createdAt ?? this.createdAt,
+      expirationTime: expirationTime ?? this.expirationTime,
+      imageUrl: imageUrl ?? this.imageUrl,
+      isActive: isActive ?? this.isActive,
+      viewCount: viewCount ?? this.viewCount,
+      claimCount: claimCount ?? this.claimCount,
+      status: status ?? this.status,
+      termsAndConditions: termsAndConditions ?? this.termsAndConditions,
+    );
+  }
+}

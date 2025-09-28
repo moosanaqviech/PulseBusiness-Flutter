@@ -47,48 +47,87 @@ class PulseBusinessApp extends StatelessWidget {
     );
   }
 
-  GoRouter _createRouter(AuthProvider authProvider) {
+ GoRouter _createRouter(AuthProvider authProvider) {
     return GoRouter(
       initialLocation: '/splash',
       redirect: (context, state) {
+        final location = state.matchedLocation;
+        final isInitialized = authProvider.isInitialized;
         final isLoggedIn = authProvider.isAuthenticated;
         final hasBusinessProfile = authProvider.currentUser?.hasBusinessProfile ?? false;
         
-        // Handle splash screen
-        if (state.pathParameters == '/splash') {
-          if (!authProvider.isInitialized) return '/splash';
-          if (!isLoggedIn) return '/auth';
-          if (!hasBusinessProfile) return '/business-setup';
+        print('🔧 Router: Redirect check - Location: "$location"');
+        print('🔧 Router: isInitialized: $isInitialized');
+        print('🔧 Router: isLoggedIn: $isLoggedIn');
+        print('🔧 Router: hasBusinessProfile: $hasBusinessProfile');
+        
+        // Show splash while initializing
+        if (!isInitialized) {
+          print('🔧 Router: Not initialized, staying on splash');
+          return '/splash';
+        }
+        
+        // If we're on splash and initialization is complete, redirect based on auth state
+        if (location == '/splash') {
+          if (!isLoggedIn) {
+            print('🔧 Router: Initialized, not logged in, redirecting to auth');
+            return '/auth';
+          }
+          if (!hasBusinessProfile) {
+            print('🔧 Router: Logged in, no business profile, redirecting to setup');
+            return '/business-setup';
+          }
+          print('🔧 Router: Logged in with business profile, redirecting to main');
           return '/main';
         }
         
-        // Redirect logic for other routes
-        if (!isLoggedIn && state.pathParameters != '/auth') return '/auth';
-        if (isLoggedIn && !hasBusinessProfile && state.pathParameters != '/business-setup') {
+        // Protect routes based on auth state
+        if (!isLoggedIn && location != '/auth') {
+          print('🔧 Router: Not logged in, redirecting to auth');
+          return '/auth';
+        }
+        
+        if (isLoggedIn && !hasBusinessProfile && location != '/business-setup') {
+          print('🔧 Router: Logged in but no business profile, redirecting to setup');
           return '/business-setup';
         }
-        if (isLoggedIn && hasBusinessProfile && (state.pathParameters == '/auth' || state.pathParameters == '/business-setup')) {
+        
+        if (isLoggedIn && hasBusinessProfile && (location == '/auth' || location == '/business-setup')) {
+          print('🔧 Router: Complete profile, redirecting to main');
           return '/main';
         }
         
+        print('🔧 Router: No redirect needed, staying on: "$location"');
         return null;
       },
       routes: [
         GoRoute(
           path: '/splash',
-          builder: (context, state) => const SplashScreen(),
+          builder: (context, state) {
+            print('🔧 Router: Building splash screen');
+            return const SplashScreen();
+          },
         ),
         GoRoute(
           path: '/auth',
-          builder: (context, state) => const AuthScreen(),
+          builder: (context, state) {
+            print('🔧 Router: Building auth screen');
+            return const AuthScreen();
+          },
         ),
         GoRoute(
           path: '/business-setup',
-          builder: (context, state) => const BusinessSetupScreen(),
+          builder: (context, state) {
+            print('🔧 Router: Building business setup screen');
+            return const BusinessSetupScreen();
+          },
         ),
         GoRoute(
           path: '/main',
-          builder: (context, state) => const MainScreen(),
+          builder: (context, state) {
+            print('🔧 Router: Building main screen');
+            return const MainScreen();
+          },
         ),
       ],
     );

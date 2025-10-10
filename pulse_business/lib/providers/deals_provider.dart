@@ -48,31 +48,39 @@ class DealsProvider extends ChangeNotifier {
 
   Future<bool> createDeal(Deal deal, {File? imageFile}) async {
     try {
+      print('🔧 DealsProvider: Creating deal: ${deal.title}');
       _setLoading(true);
       _clearError();
 
       String? imageUrl;
       if (imageFile != null) {
+        print('🔧 DealsProvider: Uploading image...');
         imageUrl = await _uploadImage(imageFile);
+        print('🔧 DealsProvider: Image uploaded: $imageUrl');
       }
 
       final dealWithImage = deal.copyWith(imageUrl: imageUrl);
       
+      print('🔧 DealsProvider: Adding deal to Firestore...');
       final docRef = await _firestore.collection('deals').add(dealWithImage.toMap());
+      print('🔧 DealsProvider: Deal created with ID: ${docRef.id}');
       
       final createdDeal = dealWithImage.copyWith(id: docRef.id);
       _allDeals.insert(0, createdDeal);
       _applyFilter();
       
+      print('🔧 DealsProvider: Deal creation successful');
       return true;
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('❌ DealsProvider: Error creating deal: $e');
+      print('❌ DealsProvider: Stack trace: $stackTrace');
       _errorMessage = 'Failed to create deal: $e';
+      notifyListeners();
       return false;
     } finally {
       _setLoading(false);
     }
   }
-
   Future<void> loadDeals(String businessId) async {
     try {
       _setLoading(true);

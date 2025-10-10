@@ -13,6 +13,8 @@ import 'screens/main/main_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'utils/theme.dart';
 
+
+import 'services/redemption_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
@@ -33,6 +35,7 @@ class PulseBusinessApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => BusinessProvider()),
         ChangeNotifierProvider(create: (_) => DealsProvider()),
+        ChangeNotifierProvider(create: (_) => RedemptionService()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {

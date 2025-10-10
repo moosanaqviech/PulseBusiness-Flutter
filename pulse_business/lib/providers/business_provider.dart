@@ -18,6 +18,7 @@ class BusinessProvider extends ChangeNotifier {
 
   Future<bool> createBusiness(Business business, {File? imageFile}) async {
     try {
+      print('🔧 BusinessProvider: Creating business for owner: ${business.ownerId}');
       _setLoading(true);
       _clearError();
 
@@ -26,17 +27,24 @@ class BusinessProvider extends ChangeNotifier {
         imageUrl = await _uploadImage(imageFile, business.ownerId);
       }
 
-      final businessWithImage = business.copyWith(imageUrl: imageUrl);
+      final businessWithImage = business.copyWith(
+        id: business.ownerId, // Set the ID immediately
+        imageUrl: imageUrl,
+      );
       
       await _firestore
           .collection('businesses')
           .doc(business.ownerId)
           .set(businessWithImage.toMap());
 
-      _currentBusiness = businessWithImage.copyWith(id: business.ownerId);
+      _currentBusiness = businessWithImage;
+      print('🔧 BusinessProvider: Business created with ID: ${_currentBusiness?.id}');
+      notifyListeners();
       return true;
     } catch (e) {
+      print('❌ BusinessProvider: Error creating business: $e');
       _errorMessage = 'Failed to create business profile: $e';
+      notifyListeners();
       return false;
     } finally {
       _setLoading(false);
@@ -45,6 +53,7 @@ class BusinessProvider extends ChangeNotifier {
 
   Future<bool> updateBusiness(Business business, {File? imageFile}) async {
     try {
+      print('🔧 BusinessProvider: Updating business: ${business.id}');
       _setLoading(true);
       _clearError();
 
@@ -64,9 +73,13 @@ class BusinessProvider extends ChangeNotifier {
           .update(updatedBusiness.toMap());
 
       _currentBusiness = updatedBusiness;
+      print('🔧 BusinessProvider: Business updated successfully');
+      notifyListeners();
       return true;
     } catch (e) {
+      print('❌ BusinessProvider: Error updating business: $e');
       _errorMessage = 'Failed to update business profile: $e';
+      notifyListeners();
       return false;
     } finally {
       _setLoading(false);
@@ -75,6 +88,7 @@ class BusinessProvider extends ChangeNotifier {
 
   Future<void> loadBusiness(String ownerId) async {
     try {
+      print('🔧 BusinessProvider: Loading business for owner: $ownerId');
       _setLoading(true);
       _clearError();
 
@@ -82,11 +96,16 @@ class BusinessProvider extends ChangeNotifier {
       
       if (doc.exists) {
         _currentBusiness = Business.fromMap(doc.data()!, id: doc.id);
+        print('🔧 BusinessProvider: Business loaded with ID: ${_currentBusiness?.id}');
       } else {
         _currentBusiness = null;
+        print('🔧 BusinessProvider: No business found for owner: $ownerId');
       }
+      notifyListeners();
     } catch (e) {
+      print('❌ BusinessProvider: Error loading business: $e');
       _errorMessage = 'Failed to load business profile: $e';
+      notifyListeners();
     } finally {
       _setLoading(false);
     }
@@ -103,9 +122,19 @@ class BusinessProvider extends ChangeNotifier {
   }
 
   Future<void> updateBusinessStats(int dealCountChange) async {
-    if (_currentBusiness == null) return;
+    if (_currentBusiness == null) {
+      print('❌ BusinessProvider: Cannot update stats - no business loaded');
+      return;
+    }
+
+    if (_currentBusiness!.id == null) {
+      print('❌ BusinessProvider: Cannot update stats - business has no ID');
+      return;
+    }
 
     try {
+      print('🔧 BusinessProvider: Updating business stats by: $dealCountChange');
+      
       final newTotalDeals = (_currentBusiness!.totalDeals + dealCountChange).clamp(0, double.infinity).toInt();
       final newActiveDeals = (_currentBusiness!.activeDeals + dealCountChange).clamp(0, double.infinity).toInt();
 
@@ -118,8 +147,11 @@ class BusinessProvider extends ChangeNotifier {
         totalDeals: newTotalDeals,
         activeDeals: newActiveDeals,
       );
+      
+      print('🔧 BusinessProvider: Stats updated - Total: $newTotalDeals, Active: $newActiveDeals');
       notifyListeners();
     } catch (e) {
+      print('❌ BusinessProvider: Error updating business stats: $e');
       _errorMessage = 'Failed to update business stats: $e';
       notifyListeners();
     }

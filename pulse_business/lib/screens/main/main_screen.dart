@@ -1,3 +1,6 @@
+// pulse_business/lib/screens/main/main_screen.dart
+// Updated to include QR Scanner tab
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
@@ -7,6 +10,7 @@ import '../../utils/theme.dart';
 import 'dashboard_tab.dart';
 import 'create_deal_tab.dart';
 import 'my_deals_tab.dart';
+import '../qr_scanner/qr_scanner_tab.dart'; // NEW
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -24,19 +28,21 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     const DashboardTab(),
     const CreateDealTab(),
     const MyDealsTab(),
+    const QRScannerScreen(), // NEW - Add QR Scanner tab
   ];
 
   final List<String> _titles = [
     'Dashboard',
     'Create Deal',
     'My Deals',
+    'Scanner', // NEW
   ];
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this); // Changed from 3 to 4
     _loadData();
   }
 
@@ -103,11 +109,10 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
-              const PopupMenuDivider(),
               const PopupMenuItem(
                 value: 'help',
                 child: ListTile(
-                  leading: Icon(Icons.help_outline),
+                  leading: Icon(Icons.help),
                   title: Text('Help & Support'),
                   contentPadding: EdgeInsets.zero,
                 ),
@@ -115,8 +120,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
               const PopupMenuItem(
                 value: 'logout',
                 child: ListTile(
-                  leading: Icon(Icons.logout, color: Colors.red),
-                  title: Text('Sign Out', style: TextStyle(color: Colors.red)),
+                  leading: Icon(Icons.logout),
+                  title: Text('Logout'),
                   contentPadding: EdgeInsets.zero,
                 ),
               ),
@@ -133,32 +138,31 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
         children: _pages,
       ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: _onTabTapped,
-        type: BottomNavigationBarType.fixed,
-        backgroundColor: Colors.white,
         selectedItemColor: AppTheme.primaryColor,
-        unselectedItemColor: AppTheme.textSecondary,
-        elevation: 8,
+        unselectedItemColor: Colors.grey,
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard_outlined),
-            activeIcon: Icon(Icons.dashboard),
+            icon: Icon(Icons.dashboard),
             label: 'Dashboard',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.add_circle_outline),
-            activeIcon: Icon(Icons.add_circle),
+            icon: Icon(Icons.add_business),
             label: 'Create Deal',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.local_offer_outlined),
-            activeIcon: Icon(Icons.local_offer),
+            icon: Icon(Icons.local_offer),
             label: 'My Deals',
+          ),
+          BottomNavigationBarItem( // NEW
+            icon: Icon(Icons.qr_code_scanner),
+            label: 'Scanner',
           ),
         ],
       ),
-      floatingActionButton: _currentIndex == 0 
+      floatingActionButton: _currentIndex == 1
           ? FloatingActionButton(
               onPressed: () => _onTabTapped(1), // Navigate to Create Deal
               backgroundColor: AppTheme.primaryColor,
@@ -176,6 +180,16 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
       curve: Curves.easeInOut,
     );
     _tabController.animateTo(index);
+  }
+
+  void _showNotifications() {
+    // TODO: Show notifications
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Notifications feature coming soon'),
+        backgroundColor: Colors.blue,
+      ),
+    );
   }
 
   void _handleMenuSelection(String value) {
@@ -239,11 +253,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
           children: [
             Text('Need help with Pulse Business?'),
             SizedBox(height: 16),
-            Text('📧 Email: support@pulseapp.com'),
-            Text('🌐 Website: www.pulseapp.com/help'),
-            Text('📱 Phone: 1-800-PULSE-HELP'),
-            SizedBox(height: 16),
-            Text('Business Hours: Mon-Fri 9AM-6PM EST'),
+            Text('Email: support@pulse.com'),
+            Text('Phone: 1-800-PULSE-BIZ'),
           ],
         ),
         actions: [
@@ -251,134 +262,8 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Close'),
           ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // TODO: Open email app or contact form
-            },
-            child: const Text('Contact Support'),
-          ),
         ],
       ),
-    );
-  }
-
-  void _showNotifications() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Notifications'),
-        content: SizedBox(
-          width: double.maxFinite,
-          child: ListView(
-            shrinkWrap: true,
-            children: [
-              _buildNotificationItem(
-                icon: Icons.local_offer,
-                title: 'Deal Performance Update',
-                subtitle: 'Your "Coffee Special" deal has 5 new claims today!',
-                time: '2 hours ago',
-                isUnread: true,
-              ),
-              _buildNotificationItem(
-                icon: Icons.schedule,
-                title: 'Deal Expiring Soon',
-                subtitle: 'Your "Lunch Combo" deal expires in 3 hours',
-                time: '4 hours ago',
-                isUnread: true,
-              ),
-              _buildNotificationItem(
-                icon: Icons.star,
-                title: 'New Review',
-                subtitle: 'Someone left a 5-star review for your business!',
-                time: '1 day ago',
-                isUnread: false,
-              ),
-              _buildNotificationItem(
-                icon: Icons.trending_up,
-                title: 'Weekly Report Ready',
-                subtitle: 'Your weekly performance report is available',
-                time: '2 days ago',
-                isUnread: false,
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // TODO: Navigate to full notifications screen
-            },
-            child: const Text('View All'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNotificationItem({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required String time,
-    required bool isUnread,
-  }) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: isUnread 
-            ? AppTheme.primaryColor.withOpacity(0.1)
-            : Colors.grey.withOpacity(0.1),
-        child: Icon(
-          icon,
-          color: isUnread ? AppTheme.primaryColor : Colors.grey,
-          size: 20,
-        ),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: isUnread ? FontWeight.bold : FontWeight.normal,
-          fontSize: 14,
-        ),
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 2),
-          Text(
-            subtitle,
-            style: const TextStyle(fontSize: 12),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            time,
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
-            ),
-          ),
-        ],
-      ),
-      isThreeLine: true,
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      trailing: isUnread 
-          ? Container(
-              width: 8,
-              height: 8,
-              decoration: const BoxDecoration(
-                color: AppTheme.primaryColor,
-                shape: BoxShape.circle,
-              ),
-            )
-          : null,
     );
   }
 
@@ -386,65 +271,24 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Sign Out'),
-        content: const Text('Are you sure you want to sign out of your account?'),
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Cancel'),
           ),
-          ElevatedButton(
-            onPressed: () {
+          TextButton(
+            onPressed: () async {
               Navigator.of(context).pop();
-              _logout();
+              final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              await authProvider.signOut();
+              // Navigation will be handled by your auth provider
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
-            ),
-            child: const Text('Sign Out'),
+            child: const Text('Logout'),
           ),
         ],
       ),
     );
-  }
-
-  Future<void> _logout() async {
-    // Show loading indicator
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => const Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-
-    try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
-      final dealsProvider = Provider.of<DealsProvider>(context, listen: false);
-
-      // Clear all data
-      businessProvider.clearBusiness();
-      dealsProvider.clearDeals();
-      
-      // Sign out
-      await authProvider.signOut();
-
-      // Navigation is handled by the router in main.dart
-    } catch (e) {
-      // Close loading dialog
-      if (mounted) Navigator.of(context).pop();
-      
-      // Show error
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error signing out: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
   }
 }

@@ -83,11 +83,11 @@ class RedemptionSuccessScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Deal Image (if available)
-                      if (redeemedVoucher.imageUrl.isNotEmpty) ...[
+                      if (redeemedVoucher.imageUrl!.isNotEmpty) ...[
                         ClipRRect(
                           borderRadius: BorderRadius.circular(12),
                           child: CachedNetworkImage(
-                            imageUrl: redeemedVoucher.imageUrl,
+                            imageUrl: redeemedVoucher.imageUrl!,
                             height: 150,
                             width: double.infinity,
                             fit: BoxFit.cover,

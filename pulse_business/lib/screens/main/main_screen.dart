@@ -7,6 +7,10 @@ import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/deals_provider.dart';
 import '../../utils/theme.dart';
+import '../analytics_screen.dart';
+import '../business_profile_screen.dart';
+import '../notifications_screen.dart';
+import '../settings_screen.dart';
 import 'dashboard_tab.dart';
 import 'create_deal_tab.dart';
 import 'my_deals_tab.dart';
@@ -182,15 +186,7 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     _tabController.animateTo(index);
   }
 
-  void _showNotifications() {
-    // TODO: Show notifications
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Notifications feature coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
+  
 
   void _handleMenuSelection(String value) {
     switch (value) {
@@ -212,35 +208,41 @@ class _MainScreenState extends State<MainScreen> with TickerProviderStateMixin {
     }
   }
 
+void _showNotifications() {
+  // ✅ FIXED: Navigate to real notifications screen
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => const NotificationsScreen(),
+    ),
+  );
+}
+
   void _navigateToBusinessProfile() {
-    // TODO: Navigate to business profile screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Business profile feature coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
+  // ✅ FIXED: Navigate to business profile screen  
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => const BusinessProfileScreen(),
+    ),
+  );
+}
 
-  void _showAnalytics() {
-    // TODO: Navigate to analytics screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Detailed analytics coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
+ void _showAnalytics() {
+  // ✅ FIXED: Navigate to analytics screen
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => const AnalyticsScreen(),
+    ),
+  );
+}
 
-  void _showSettings() {
-    // TODO: Navigate to settings screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Settings feature coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
+void _showSettings() {
+  // ✅ FIXED: Navigate to settings screen
+  Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (context) => const SettingsScreen(),
+    ),
+  );
+}
 
   void _showHelp() {
     showDialog(

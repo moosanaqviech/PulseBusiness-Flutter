@@ -3,6 +3,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import '../models/business.dart';
+import '../models/business_profile.dart';
+
+
 
 class BusinessProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -15,6 +18,9 @@ class BusinessProvider extends ChangeNotifier {
   Business? get currentBusiness => _currentBusiness;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  BusinessProfile? _businessProfile;
+  BusinessProfile? get businessProfile => _businessProfile;
 
   Future<bool> createBusiness(Business business, {File? imageFile}) async {
     try {
@@ -156,6 +162,102 @@ class BusinessProvider extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+ /// Load business profile (converted from Business)
+Future<void> loadBusinessProfile(String ownerId) async {
+  try {
+    _setLoading(true);
+    _clearError();
+
+    final doc = await _firestore.collection('businesses').doc(ownerId).get();
+    
+    if (doc.exists) {
+      // ✅ FIXED: Use fromMap method that exists in your Business model
+      final business = Business.fromMap(doc.data()!, id: doc.id);
+      _currentBusiness = business;
+      _businessProfile = BusinessProfile.fromBusiness(business);
+      print('✅ BusinessProvider: Profile loaded for: ${_businessProfile?.businessName}');
+    } else {
+      _businessProfile = null;
+      _currentBusiness = null;
+      print('⚠️ BusinessProvider: No business profile found for: $ownerId');
+    }
+    
+    notifyListeners();
+  } catch (e) {
+    print('❌ BusinessProvider: Error loading business profile: $e');
+    _errorMessage = 'Failed to load business profile: $e';
+    notifyListeners();
+  } finally {
+    _setLoading(false);
+  }
+}
+
+/// Update business profile
+Future<bool> updateBusinessProfile(BusinessProfile profile) async {
+  try {
+    _setLoading(true);
+    _clearError();
+
+    // Convert BusinessProfile back to Business model for storage
+    final business = profile.toBusiness();
+    
+    await _firestore
+        .collection('businesses')
+        .doc(profile.id)
+        .set(business.toMap(), SetOptions(merge: true));
+
+    _businessProfile = profile;
+    _currentBusiness = business;
+    
+    print('✅ BusinessProvider: Profile updated for: ${profile.businessName}');
+    notifyListeners();
+    return true;
+  } catch (e) {
+    print('❌ BusinessProvider: Error updating business profile: $e');
+    _errorMessage = 'Failed to update business profile: $e';
+    notifyListeners();
+    return false;
+  } finally {
+    _setLoading(false);
+  }
+}
+
+/// Create initial business profile from Business
+Future<bool> createBusinessProfile(BusinessProfile profile) async {
+  try {
+    _setLoading(true);
+    _clearError();
+
+    final business = profile.toBusiness();
+    
+    await _firestore
+        .collection('businesses')
+        .doc(profile.ownerId)
+        .set(business.toMap());
+
+    _businessProfile = profile;
+    _currentBusiness = business;
+    
+    print('✅ BusinessProvider: Profile created for: ${profile.businessName}');
+    notifyListeners();
+    return true;
+  } catch (e) {
+    print('❌ BusinessProvider: Error creating business profile: $e');
+    _errorMessage = 'Failed to create business profile: $e';
+    notifyListeners();
+    return false;
+  } finally {
+    _setLoading(false);
+  }
+}
+
+
+
+/// Check if user has a complete business profile
+bool get hasCompleteProfile {
+  return _businessProfile?.isComplete ?? false;
+}
 
   void _setLoading(bool loading) {
     _isLoading = loading;

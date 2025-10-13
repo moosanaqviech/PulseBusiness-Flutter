@@ -30,7 +30,9 @@ class RedemptionService extends ChangeNotifier {
       });
 
       debugPrint('✅ Redemption response: ${response.data}');
+      debugPrint('🔍 Response data type: ${response.data.runtimeType}');
 
+      // FIXED: Safe casting of response.data
       final Map<String, dynamic> data;
       if (response.data is Map<String, dynamic>) {
         data = response.data as Map<String, dynamic>;
@@ -40,10 +42,17 @@ class RedemptionService extends ChangeNotifier {
         throw Exception('Unexpected response type: ${response.data.runtimeType}');
       }
 
-
       if (data['success'] == true && data['purchase'] != null) {
-        // Convert the purchase data to Purchase object
-        final purchaseData = data['purchase'] as Map<String, dynamic>;
+        // FIXED: Safe casting of purchase data
+        final Map<String, dynamic> purchaseData;
+        if (data['purchase'] is Map<String, dynamic>) {
+          purchaseData = data['purchase'] as Map<String, dynamic>;
+        } else if (data['purchase'] is Map) {
+          purchaseData = Map<String, dynamic>.from(data['purchase'] as Map);
+        } else {
+          throw Exception('Unexpected purchase data type: ${data['purchase'].runtimeType}');
+        }
+        
         final redeemedPurchase = Purchase.fromMap(purchaseData);
         
         _lastRedeemedVoucher = redeemedPurchase;
@@ -69,8 +78,7 @@ class RedemptionService extends ChangeNotifier {
       _setLoading(false);
     }
   }
-
-  /// Verify voucher without redeeming (check validity)
+ 
   /// Verify voucher without redeeming (check validity)
   Future<Purchase?> verifyVoucher(String qrCodeData) async {
     try {

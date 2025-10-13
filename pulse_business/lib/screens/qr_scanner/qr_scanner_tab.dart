@@ -1,5 +1,6 @@
 // pulse_business/lib/screens/qr_scanner_screen.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
@@ -251,68 +252,64 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   }
 
   Future<void> _processQRCode(String qrCodeData) async {
-    setState(() {
-      _isScanning = false;
-      _isRedeemingVoucher = true;
-    });
+  setState(() {
+    _isScanning = false;
+    _isRedeemingVoucher = true;
+  });
 
-    try {
-      final redemptionService = Provider.of<RedemptionService>(context, listen: false);
+  try {
+    final redemptionService = Provider.of<RedemptionService>(context, listen: false);
+    
+    // First verify the voucher
+    final voucher = await redemptionService.verifyVoucher(qrCodeData);
+    
+    if (voucher == null) {
+      _showErrorSnackBar(redemptionService.errorMessage ?? 'Invalid voucher');
+      return;
+    }
+
+    // Check voucher status
+    if (voucher.isRedeemed) {
+      _showErrorSnackBar('This voucher has already been redeemed');
+      return;
+    }
+
+    if (voucher.isExpired) {
+      _showErrorSnackBar('This voucher has expired');
+      return;
+    }
+
+    // Show confirmation dialog
+    final shouldRedeem = await _showRedemptionConfirmationDialog(voucher);
+    
+    if (shouldRedeem) {
+      // Redeem the voucher
+      final redeemedVoucher = await redemptionService.redeemVoucher(qrCodeData);
       
-      // First verify the voucher
-      final voucher = await redemptionService.verifyVoucher(qrCodeData);
-      
-      if (voucher == null) {
-        _showErrorDialog(redemptionService.errorMessage ?? 'Invalid voucher');
-        return;
-      }
-
-      // Check voucher status
-      if (voucher.isRedeemed) {
-        _showErrorDialog('This voucher has already been redeemed');
-        return;
-      }
-
-      if (voucher.isExpired) {
-        _showErrorDialog('This voucher has expired');
-        return;
-      }
-
-      // Show confirmation dialog
-      final shouldRedeem = await _showRedemptionConfirmationDialog(voucher);
-      
-      if (shouldRedeem) {
-        // Redeem the voucher
-        final redeemedVoucher = await redemptionService.redeemVoucher(qrCodeData);
-        
-        if (redeemedVoucher != null) {
-          // Navigate to success screen
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => RedemptionSuccessScreen(
-                  redeemedVoucher: redeemedVoucher,
-                ),
-              ),
-            );
-          }
-        } else {
-          _showErrorDialog(redemptionService.errorMessage ?? 'Failed to redeem voucher');
+      if (redeemedVoucher != null) {
+        // SUCCESS: Navigate using GoRouter
+        if (mounted) {
+          context.go('/redemption-success', extra: {'purchase': redeemedVoucher});
         }
-      }
-
-    } catch (e) {
-      debugPrint('❌ Error processing QR code: $e');
-      _showErrorDialog('Error processing voucher: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isRedeemingVoucher = false;
-          _isScanning = true;
-        });
+      } else {
+        _showErrorSnackBar(redemptionService.errorMessage ?? 'Failed to redeem voucher');
       }
     }
+
+  } catch (e) {
+    debugPrint('❌ Error processing QR code: $e');
+    _showErrorSnackBar('Error processing voucher: ${e.toString()}');
+  } finally {
+    if (mounted) {
+      setState(() {
+        _isRedeemingVoucher = false;
+        _isScanning = true;
+      });
+    }
   }
+}
+  
+  
 
   Future<bool> _showRedemptionConfirmationDialog(Purchase voucher) async {
     return await showDialog<bool>(
@@ -358,6 +355,34 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     ) ?? false;
   }
 
+
+void _showErrorSnackBar(String message) {
+  if (mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {
+            setState(() {
+              _isScanning = true;
+              _isRedeemingVoucher = false;
+            });
+          },
+        ),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+    
+    // Reset scanning state
+    setState(() {
+      _isScanning = true;
+      _isRedeemingVoucher = false;
+    });
+  }
+}
   void _showErrorDialog(String message) {
     showDialog(
       context: context,

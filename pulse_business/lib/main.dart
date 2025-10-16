@@ -23,7 +23,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+  //await DatabaseHelper.initializeOnAppStart();
   runApp(const PulseBusinessApp());
 }
 

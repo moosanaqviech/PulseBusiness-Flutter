@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 
 import 'firebase_options.dart';
-import 'models/purchase.dart';
 import 'providers/auth_provider.dart';
 import 'providers/business_provider.dart';
 import 'providers/deals_provider.dart';
@@ -12,7 +11,6 @@ import 'screens/auth/auth_screen.dart';
 import 'screens/business_setup/business_setup_screen.dart';
 import 'screens/main/main_screen.dart';
 import 'screens/splash/splash_screen.dart';
-import 'screens/qr_scanner/redemption_success_screen.dart';
 import 'utils/theme.dart';
 
 
@@ -134,20 +132,6 @@ class PulseBusinessApp extends StatelessWidget {
             return const MainScreen();
           },
         ),
-         GoRoute(
-        path: '/redemption-success',
-        builder: (context, state) {
-          final extra = state.extra as Map<String, dynamic>?;
-          final purchase = extra?['purchase'] as Purchase?;
-          
-          if (purchase == null) {
-            // If no purchase data, redirect back to main
-            return const MainScreen();
-          }
-          
-          return RedemptionSuccessScreen(redeemedVoucher: purchase);
-        },
-      ),
       ],
     );
   }

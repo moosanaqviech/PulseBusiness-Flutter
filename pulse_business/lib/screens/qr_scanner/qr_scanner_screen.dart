@@ -1,5 +1,5 @@
 // pulse_business/lib/screens/qr_scanner/qr_scanner_screen.dart
-/*import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
@@ -443,4 +443,4 @@ Future<void> testDirectFirestoreAccess(String purchaseId) async {
       },
     );
   }
-}*/
+}

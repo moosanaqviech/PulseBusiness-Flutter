@@ -470,7 +470,7 @@ class _EnhancedCreateDealTabState extends State<EnhancedCreateDealTab> {
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
-                    '\${template.averageConversionRate!.toStringAsFixed(1)}% avg',
+                    '${template.averageConversionRate!.toStringAsFixed(1)}% avg',
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,

@@ -5,9 +5,14 @@ import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../utils/theme.dart';
+<<<<<<< HEAD
 import '../qr_scanner/qr_scanner_tab.dart';
 import 'smart_templates_tab.dart';
 import 'enhanced_create_deal_tab.dart';
+=======
+import 'dashboard_tab.dart';
+import 'create_deal_tab.dart';
+>>>>>>> parent of 8f2418c (Major Changes Analytics/Profile etc)
 import 'my_deals_tab.dart';
 import '../settings_screen.dart';
 
@@ -323,6 +328,7 @@ class _MainScreenState extends State<MainScreen> {
     return null;
   }
 
+<<<<<<< HEAD
   // Action handlers
   void _showNotifications() {
     showDialog(
@@ -336,6 +342,14 @@ class _MainScreenState extends State<MainScreen> {
             child: const Text('OK'),
           ),
         ],
+=======
+  void _showNotifications() {
+    // TODO: Show notifications
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Notifications feature coming soon'),
+        backgroundColor: Colors.blue,
+>>>>>>> parent of 8f2418c (Major Changes Analytics/Profile etc)
       ),
     );
   }
@@ -365,7 +379,41 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
+<<<<<<< HEAD
   void _showTemplateHelp() {
+=======
+  void _navigateToBusinessProfile() {
+    // TODO: Navigate to business profile screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Business profile feature coming soon'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
+  void _showAnalytics() {
+    // TODO: Navigate to analytics screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Detailed analytics coming soon'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
+  void _showSettings() {
+    // TODO: Navigate to settings screen
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Settings feature coming soon'),
+        backgroundColor: Colors.blue,
+      ),
+    );
+  }
+
+  void _showHelp() {
+>>>>>>> parent of 8f2418c (Major Changes Analytics/Profile etc)
     showDialog(
       context: context,
       builder: (context) => AlertDialog(

@@ -1,4 +1,4 @@
-package com.example.pulse_business
+package com.pulse.business
 
 import io.flutter.embedding.android.FlutterActivity
 

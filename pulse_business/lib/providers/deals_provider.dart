@@ -168,15 +168,39 @@ class DealsProvider extends ChangeNotifier {
   }
 
   Future<String> _uploadImage(File imageFile) async {
-    try {
-      final fileName = 'deals/${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = _storage.ref().child(fileName);
-      final uploadTask = await ref.putFile(imageFile);
-      return await uploadTask.ref.getDownloadURL();
-    } catch (e) {
-      throw Exception('Failed to upload image: $e');
+  try {
+    print('🔧 Starting image upload...');
+    
+    // Check if file exists
+    if (!await imageFile.exists()) {
+      throw Exception('Image file does not exist');
     }
+    
+    // Generate unique filename
+    final fileName = 'deals/${DateTime.now().millisecondsSinceEpoch}_${imageFile.path.split('/').last}';
+    final ref = _storage.ref().child(fileName);
+    
+    print('🔧 Uploading to: $fileName');
+    
+    // Set metadata
+    final metadata = SettableMetadata(
+      contentType: 'image/jpeg',
+      customMetadata: {
+        'uploaded_by': 'pulse_business',
+        'upload_time': DateTime.now().toIso8601String(),
+      },
+    );
+    
+    final uploadTask = await ref.putFile(imageFile, metadata);
+    final downloadUrl = await uploadTask.ref.getDownloadURL();
+    
+    print('🔧 Upload successful: $downloadUrl');
+    return downloadUrl;
+  } catch (e) {
+    print('❌ Upload failed: $e');
+    throw Exception('Failed to upload image: $e');
   }
+}
 
   String getEmptyStateMessage() {
     switch (_currentFilter) {

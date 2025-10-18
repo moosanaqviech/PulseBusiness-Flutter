@@ -689,22 +689,7 @@ class _SmartTemplatesTabState extends State<SmartTemplatesTab> with AutomaticKee
                   overflow: TextOverflow.ellipsis,
                 ),
                 const Spacer(),
-                if (template.averageConversionRate != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: template.primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${template.averageConversionRate!.toStringAsFixed(1)}% avg',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: template.primaryColor,
-                      ),
-                    ),
-                  ),
+               
               ],
             ),
           ),

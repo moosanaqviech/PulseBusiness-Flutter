@@ -2,8 +2,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:pulse_business/screens/deal_creation/enhanced_deal_creation_screen.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
+import '../../providers/deals_provider.dart';
 import '../../utils/theme.dart';
 import 'dashboard_tab.dart';
 import 'create_deal_tab.dart';
@@ -35,7 +37,7 @@ class _MainScreenState extends State<MainScreen> {
   // Updated tab widgets
   final List<Widget> _tabs = [
     const SmartTemplatesTab(),        // NEW - replaces DashboardTab
-    const EnhancedCreateDealTab(),    // ENHANCED - templates integration
+    const EnhancedDealCreationScreen(),    // ENHANCED - templates integration
     const QRScannerScreen(),               // EXISTING - Your scanner tab
     const MyDealsTab(),               // EXISTING
     //const SettingsScreen(),           // EXISTING
@@ -55,15 +57,26 @@ class _MainScreenState extends State<MainScreen> {
   void _checkBusinessProfile() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final dealsProvider = Provider.of<DealsProvider>(context, listen: false);
     
     // If user doesn't have business profile, redirect to setup
     if (authProvider.isAuthenticated && 
         !authProvider.currentUser!.hasBusinessProfile) {
       Navigator.pushReplacementNamed(context, '/business-setup');
     } else if (businessProvider.currentBusiness == null) {
-      // Load business data if not already loaded
-      businessProvider.loadBusiness(authProvider.currentUser!.uid);
+    // Load business data if not already loaded
+    businessProvider.loadBusiness(authProvider.currentUser!.uid).then((_) {
+      // Load deals after business is loaded
+      if (businessProvider.currentBusiness?.id != null) {
+        dealsProvider.loadDeals(businessProvider.currentBusiness!.id!);
+      }
+    });
+  } else {
+    // Business already loaded, just load deals
+    if (businessProvider.currentBusiness?.id != null) {
+      dealsProvider.loadDeals(businessProvider.currentBusiness!.id!);
     }
+  }
   }
 
   @override

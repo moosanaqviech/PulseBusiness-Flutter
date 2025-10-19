@@ -140,7 +140,7 @@ class PercentageOffTemplate extends DealStructureTemplate {
   
   @override
   List<TemplateField> get optionalFields => [
-    const TemplateField(
+    /*const TemplateField(
       id: 'minimum_purchase',
       label: 'Minimum Purchase',
       description: 'Minimum amount to qualify for discount',
@@ -161,19 +161,14 @@ class PercentageOffTemplate extends DealStructureTemplate {
         'min': 1.00,
         'max': 200.00,
       },
-    ),
+    ),*/
     const TemplateField(
-      id: 'excluded_categories',
-      label: 'Excluded Items',
-      description: 'Categories not eligible for discount',
-      type: FieldType.multiSelect,
+      id: 'description',
+      label: 'Description',
+      description: 'Add deal description',
+      type: FieldType.text,
       required: false,
-      options: [
-        FieldOption(value: 'alcohol', label: 'Alcoholic Beverages'),
-        FieldOption(value: 'tobacco', label: 'Tobacco Products'),
-        FieldOption(value: 'gift_cards', label: 'Gift Cards'),
-        FieldOption(value: 'sale_items', label: 'Already Discounted Items'),
-      ],
+      
     ),
   ];
   
@@ -313,5 +308,154 @@ class PercentageOffTemplate extends DealStructureTemplate {
       'target_audience': 'Weekend leisure customers',
       'expected_conversion': 24.3,
     };
+  }
+
+  
+}
+
+// Simple Combo Deal Template Implementation
+// Add this to your deal_structure_templates.dart file
+
+class ComboDealTemplate extends DealStructureTemplate {
+  @override
+  String get id => 'combo_deal';
+  
+  @override
+  String get name => 'Combo Deal';
+  
+  @override
+  String get description => 'Bundle items together for a discounted price';
+  
+  @override
+  String get icon => '📦';
+  
+  @override
+  Color get primaryColor => Colors.orange;
+  
+  @override
+  List<TemplateField> get requiredFields => [
+    const TemplateField(
+      id: 'combo_title',
+      label: 'Combo Title',
+      description: 'Name for your combo (e.g., "Lunch Special", "Coffee & Pastry")',
+      type: FieldType.text,
+      required: true,
+      constraints: {
+        'maxLength': 50,
+      },
+    ),
+    const TemplateField(
+      id: 'combo_items',
+      label: 'What\'s Included',
+      description: 'List the items in your combo (e.g., "Burger + Fries + Drink")',
+      type: FieldType.text,
+      required: true,
+      constraints: {
+        'placeholder': 'Item 1 + Item 2 + Item 3',
+        'maxLength': 150,
+      },
+    ),
+    const TemplateField(
+      id: 'combo_price',
+      label: 'Combo Price',
+      description: 'Your combo deal price',
+      type: FieldType.currency,
+      required: true,
+      constraints: {
+        'min': 1.00,
+        'max': 500.00,
+      },
+    ),
+  ];
+  
+  @override
+  List<TemplateField> get optionalFields => [
+    const TemplateField(
+      id: 'combo_description',
+      label: 'Extra Details',
+      description: 'Any additional details about choices or upgrades',
+      type: FieldType.text,
+      required: false,
+      constraints: {
+        'placeholder': 'Choose your drink, substitutions available, etc.',
+        'maxLength': 100,
+      },
+    ),
+  ];
+  
+  @override
+  Map<String, String?> validateFields(Map<String, dynamic> data) {
+    final errors = <String, String?>{};
+    
+    // Validate title
+    final title = data['combo_title']?.toString()?.trim();
+    if (title == null || title.isEmpty) {
+      errors['combo_title'] = 'Combo title is required';
+    }
+    
+    // Validate items
+    final items = data['combo_items']?.toString()?.trim();
+    if (items == null || items.isEmpty) {
+      errors['combo_items'] = 'Please list what\'s included in the combo';
+    }
+    
+    // Validate price
+    final comboPrice = data['combo_price'];
+    if (comboPrice == null || comboPrice <= 0) {
+      errors['combo_price'] = 'Combo price must be greater than 0';
+    }
+    
+    return errors;
+  }
+  
+  @override
+  String generatePreview(Map<String, dynamic> data, Business business) {
+    final title = data['combo_title'] ?? 'Combo Deal';
+    final items = data['combo_items'] ?? 'Multiple items';
+    final comboPrice = data['combo_price'] ?? 0.0;
+    final extraDetails = data['combo_description'] ?? '';
+    
+    String preview = '$title\n';
+    preview += '$items\n';
+    preview += 'Price: \${comboPrice.toStringAsFixed(2)}';
+    
+    if (extraDetails.isNotEmpty) {
+      preview += '\n$extraDetails';
+    }
+    
+    return preview;
+  }
+  
+  @override
+  Map<String, dynamic> getSmartDefaults(Business business, TemplateContext context) {
+    final defaults = <String, dynamic>{};
+    
+    // Simple business-based defaults
+    switch (business.category.toLowerCase()) {
+      case 'restaurant':
+        defaults['combo_title'] = 'Lunch Combo';
+        defaults['combo_items'] = 'Entree + Side + Drink';
+        defaults['combo_price'] = 14.99;
+        break;
+        
+      case 'cafe':
+        defaults['combo_title'] = 'Coffee & Pastry';
+        defaults['combo_items'] = 'Specialty Coffee + Fresh Pastry';
+        defaults['combo_price'] = 6.99;
+        break;
+        
+      case 'bar':
+        defaults['combo_title'] = 'Happy Hour Special';
+        defaults['combo_items'] = 'Beer + Appetizer';
+        defaults['combo_price'] = 9.99;
+        break;
+        
+      default:
+        defaults['combo_title'] = 'Value Bundle';
+        defaults['combo_items'] = 'Main Item + Bonus Item';
+        defaults['combo_price'] = 12.99;
+    }
+    
+    return defaults;
   }
 }

@@ -176,10 +176,10 @@ class RedemptionSuccessScreen extends StatelessWidget {
               // Action Buttons
               Row(
                 children: [
-                  Expanded(
+                  /*Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () {
-                        Navigator.of(context).pop();
+                        //Navigator.of(context).pop();
                       },
                       icon: const Icon(Icons.arrow_back),
                       label: const Text('Back'),
@@ -191,7 +191,7 @@ class RedemptionSuccessScreen extends StatelessWidget {
                     ),
                   ),
                   
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 16),*/
                   
                   Expanded(
                     child: ElevatedButton.icon(

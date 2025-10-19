@@ -33,7 +33,8 @@ class TemplateTransformationService {
     switch (template.id) {
       case 'percentage_off':
         return _transformPercentageOffToDeal(finalData, business, context, customStartTime);
-      
+      case 'combo_deal':
+        return _transformComboDealToDeal(finalData, business, context, customStartTime);
       // Future templates will be added here
       case 'bogo':
         return _transformBOGOToDeal(finalData, business, context, customStartTime);
@@ -105,6 +106,51 @@ class TemplateTransformationService {
     );
   }
   
+  
+  Deal _transformComboDealToDeal(
+  Map<String, dynamic> data,
+  Business business,
+  TemplateContext context,
+  DateTime? customStartTime,
+) {
+  final title = data['combo_title'] ?? 'Combo Deal';
+  final items = data['combo_items'] ?? 'Multiple items';
+  final comboPrice = data['combo_price'] ?? 0.0;
+  final extraDetails = data['combo_description'] ?? '';
+  
+  // Simple description - no savings calculation needed
+  String description = 'Get $items for just \${comboPrice.toStringAsFixed(2)}';
+  if (extraDetails.isNotEmpty) {
+    description += '. $extraDetails';
+  }
+  
+  // Get timing
+  final timing = _getOptimalTiming(data, context, customStartTime);
+  
+  return Deal(
+    title: '$title at ${business.name}',
+    description: description,
+    category: business.category,
+    latitude: business.latitude,
+    longitude: business.longitude,
+    originalPrice: comboPrice, // Set same as deal price since no original price
+    dealPrice: comboPrice,
+    totalQuantity: 15,
+    remainingQuantity: 15,
+    businessId: business.id!,
+    businessName: business.name,
+    startTime: timing['startTime'],
+    expirationTime: timing['expirationTime'],
+    termsAndConditions: 'Combo items as listed. Cannot be combined with other offers. One per customer.',
+    isActive: timing['isActive'],
+    isScheduled: timing['isScheduled'],
+    createdAt: DateTime.now(),
+  );
+}
+
+// Don't forget to add 'combo_deal' case to your transformToDeal switch statement:
+// case 'combo_deal':
+//   return _transformComboDealToDeal(finalData, business, context, customStartTime);
   /// Generate context-aware content (title, description)
   Map<String, String> _generateContextAwareContent(
     Map<String, dynamic> data,
@@ -155,62 +201,100 @@ class TemplateTransformationService {
   
   /// Determine optimal timing based on context
   Map<String, dynamic> _getOptimalTiming(
-    Map<String, dynamic> data,
-    TemplateContext context,
-    DateTime? customStartTime,
-  ) {
-    final now = DateTime.now();
-    DateTime startTime;
-    DateTime expirationTime;
-    bool isScheduled = false;
-    bool isActive = true;
+  Map<String, dynamic> data,
+  TemplateContext context,
+  DateTime? customStartTime,
+) {
+  final now = DateTime.now();
+  DateTime? startTime;
+  DateTime expirationTime;
+  bool isScheduled = false;
+  bool isActive = true;
+  
+  // Check if user explicitly wants to start immediately
+  if (data['start_immediately'] == true || customStartTime == null) {
+    // User wants to start now - no scheduling needed
+    startTime = null; // null means start immediately
+    isActive = true;
+    isScheduled = false;
     
-    if (customStartTime != null) {
-      // User specified custom start time
-      startTime = customStartTime;
+    // Set expiration time based on context or user choice
+    if (data['user_end_time'] != null) {
+      expirationTime = data['user_end_time'];
+    } else {
+      // Use context-based default expiration
+      expirationTime = _getDefaultExpirationTime(context, now);
+    }
+  } else if (customStartTime != null) {
+    // User specified a custom start time - schedule the deal
+    startTime = customStartTime;
+    isScheduled = true;
+    isActive = false; // Will be activated at start time
+    
+    // Set expiration time
+    if (data['user_end_time'] != null) {
+      expirationTime = data['user_end_time'];
+    } else {
+      // Calculate expiration based on start time and context
+      expirationTime = _getDefaultExpirationTime(context, startTime);
+    }
+  } else if (context.confidence > 0.6 && data['suggested_timing'] != null) {
+    // Use AI-suggested timing only if user hasn't made explicit choices
+    final timing = data['suggested_timing'];
+    startTime = _parseTimeToToday(timing['start_time']);
+    
+    // If suggested start time has passed today, schedule for tomorrow
+    if (startTime!.isBefore(now)) {
+      startTime = startTime.add(const Duration(days: 1));
       isScheduled = true;
       isActive = false;
-    } else if (context.confidence > 0.6 && data['suggested_timing'] != null) {
-      // Use context-suggested timing
-      final timing = data['suggested_timing'];
-      startTime = _parseTimeToToday(timing['start_time']);
-      
-      // If start time has passed today, schedule for tomorrow
-      if (startTime.isBefore(now)) {
-        startTime = startTime.add(Duration(days: 1));
-        isScheduled = true;
-        isActive = false;
-      }
+    } else if (startTime.isAfter(now)) {
+      // Suggested time is later today
+      isScheduled = true;
+      isActive = false;
     } else {
-      // Default to immediate start
-      startTime = now;
+      // Suggested time is now
+      startTime = null;
+      isActive = true;
+      isScheduled = false;
     }
     
-    // Calculate expiration based on context
-    if (context.detectedContext == 'happy_hour') {
-      // Happy hour typically runs for 3 hours
-      expirationTime = startTime.add(Duration(hours: 3));
-    } else if (context.detectedContext == 'lunch_special') {
-      // Lunch special runs for 3 hours
-      expirationTime = startTime.add(Duration(hours: 3));
-    } else if (context.detectedContext == 'morning_rush') {
-      // Morning rush for 2.5 hours
-      expirationTime = startTime.add(Duration(hours: 2, minutes: 30));
-    } else if (context.detectedContext == 'flash_sale') {
-      // Flash sale for 4 hours
-      expirationTime = startTime.add(Duration(hours: 4));
-    } else {
-      // Default duration: 1 week
-      expirationTime = startTime.add(Duration(days: 7));
-    }
-    
-    return {
-      'startTime': startTime,
-      'expirationTime': expirationTime,
-      'isScheduled': isScheduled,
-      'isActive': isActive,
-    };
+    expirationTime = _getDefaultExpirationTime(context, startTime ?? now);
+  } else {
+    // Default to immediate start
+    startTime = null;
+    isActive = true;
+    isScheduled = false;
+    expirationTime = _getDefaultExpirationTime(context, now);
   }
+  
+  return {
+    'startTime': startTime,
+    'expirationTime': expirationTime,
+    'isScheduled': isScheduled,
+    'isActive': isActive,
+  };
+}
+
+// Helper method to get default expiration time based on context
+DateTime _getDefaultExpirationTime(TemplateContext context, DateTime baseTime) {
+  if (context.detectedContext == 'happy_hour') {
+    return baseTime.add(const Duration(hours: 3));
+  } else if (context.detectedContext == 'lunch_special') {
+    return baseTime.add(const Duration(hours: 3));
+  } else if (context.detectedContext == 'morning_rush') {
+    return baseTime.add(const Duration(hours: 2, minutes: 30));
+  } else if (context.detectedContext == 'flash_sale') {
+    return baseTime.add(const Duration(hours: 4));
+  } else if (context.detectedContext == 'weekend_special') {
+    return baseTime.add(const Duration(hours: 12));
+  } else {
+    // Default duration: 1 week
+    return baseTime.add(const Duration(days: 7));
+  }
+}
+
+
   
   /// Calculate optimal quantity based on business and context
   int _calculateOptimalQuantity(Business business, TemplateContext context) {

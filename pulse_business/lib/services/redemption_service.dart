@@ -14,61 +14,52 @@ class RedemptionService extends ChangeNotifier {
   Purchase? get lastRedeemedVoucher => _lastRedeemedVoucher;
 
   /// Redeem a voucher using QR code data
-  Future<Purchase?> redeemVoucher(String qrCodeData) async {
-    try {
-      _setLoading(true);
-      _clearError();
+  // Replace your existing redeemVoucher method with this fixed version:
 
-      debugPrint('🔵 Attempting to redeem voucher: $qrCodeData');
+Future<Purchase?> redeemVoucher(String qrCodeData) async {
+  try {
+    _setLoading(true);
+    _clearError();
 
-      // Call Firebase Cloud Function to redeem voucher
-      final callable = FirebaseFunctions.instance
-          .httpsCallable('redeemVoucher');
+    debugPrint('🔵 Attempting to redeem voucher: $qrCodeData');
 
-      final response = await callable.call({
-        'purchaseId': qrCodeData,
-      });
+    final callable = FirebaseFunctions.instance.httpsCallable('redeemVoucher');
+    final response = await callable.call({'purchaseId': qrCodeData});
 
-      debugPrint('✅ Redemption response: ${response.data}');
+    debugPrint('✅ Redemption response: ${response.data}');
+    debugPrint('🔍 Response data type: ${response.data.runtimeType}');
 
-      final Map<String, dynamic> data;
-      if (response.data is Map<String, dynamic>) {
-        data = response.data as Map<String, dynamic>;
-      } else if (response.data is Map) {
-        data = Map<String, dynamic>.from(response.data as Map);
-      } else {
-        throw Exception('Unexpected response type: ${response.data.runtimeType}');
-      }
+    // FIXED: Use _safeConvertToMap instead of manual casting
+    final Map<String, dynamic> data = _safeConvertToMap(response.data);
 
-
-      if (data['success'] == true && data['purchase'] != null) {
-        // Convert the purchase data to Purchase object
-        final purchaseData = data['purchase'] as Map<String, dynamic>;
-        final redeemedPurchase = Purchase.fromMap(purchaseData);
-        
-        _lastRedeemedVoucher = redeemedPurchase;
-        notifyListeners();
-        
-        return redeemedPurchase;
-      } else {
-        final errorMsg = data['error']?.toString() ?? 'Failed to redeem voucher';
-        _setError(errorMsg);
-        return null;
-      }
-
-    } on FirebaseFunctionsException catch (e) {
-      debugPrint('❌ Cloud Function Error: ${e.code} - ${e.message}');
-      debugPrint('❌ Details: ${e.details}');
-      _setError(_getFirebaseFunctionError(e));
+    if (data['success'] == true && data['purchase'] != null) {
+      // FIXED: Use _safeConvertToMap for purchase data too
+      final Map<String, dynamic> purchaseData = _safeConvertToMap(data['purchase']);
+      final redeemedPurchase = Purchase.fromMap(purchaseData);
+      
+      _lastRedeemedVoucher = redeemedPurchase;
+      notifyListeners();
+      
+      return redeemedPurchase;
+    } else {
+      final errorMsg = data['error']?.toString() ?? 'Failed to redeem voucher';
+      _setError(errorMsg);
       return null;
-    } catch (e) {
-      debugPrint('❌ Error redeeming voucher: $e');
-      _setError('Failed to redeem voucher: ${e.toString()}');
-      return null;
-    } finally {
-      _setLoading(false);
     }
+
+  } on FirebaseFunctionsException catch (e) {
+    debugPrint('❌ Cloud Function Error: ${e.code} - ${e.message}');
+    debugPrint('❌ Details: ${e.details}');
+    _setError(_getFirebaseFunctionError(e));
+    return null;
+  } catch (e) {
+    debugPrint('❌ Error redeeming voucher: $e');
+    _setError('Failed to redeem voucher: ${e.toString()}');
+    return null;
+  } finally {
+    _setLoading(false);
   }
+}
 
   /// Verify voucher without redeeming (check validity)
   /// Verify voucher without redeeming (check validity)
@@ -171,5 +162,23 @@ class RedemptionService extends ChangeNotifier {
   void clearLastRedemption() {
     _lastRedeemedVoucher = null;
     notifyListeners();
+  }
+
+   Map<String, dynamic> _safeConvertToMap(dynamic data) {
+    if (data == null) {
+      return {};
+    }
+    
+    if (data is Map<String, dynamic>) {
+      return data;
+    }
+    
+    if (data is Map) {
+      // Convert Map<dynamic, dynamic> to Map<String, dynamic>
+      return Map<String, dynamic>.from(data.map((key, value) => 
+        MapEntry(key.toString(), value)));
+    }
+    
+    throw Exception('Cannot convert data to Map<String, dynamic>: ${data.runtimeType}');
   }
 }

@@ -1,15 +1,13 @@
-// pulse_business/lib/screens/qr_scanner/qr_scanner_screen.dart
+// Updated qr_scanner_tab.dart with navigation fixes
+// Replaces all dialog calls with SnackBars to prevent Go Router conflicts
+
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-
-import '../../services/redemption_service.dart';
+import 'package:go_router/go_router.dart';
 import '../../models/purchase.dart';
+import '../../services/redemption_service.dart';
 import 'redemption_success_screen.dart';
-
-
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 
 class QRScannerScreen extends StatefulWidget {
   const QRScannerScreen({super.key});
@@ -19,107 +17,72 @@ class QRScannerScreen extends StatefulWidget {
 }
 
 class _QRScannerScreenState extends State<QRScannerScreen> {
-  MobileScannerController cameraController = MobileScannerController();
+  MobileScannerController controller = MobileScannerController();
   bool _isScanning = true;
-  bool _isFlashOn = false;
   bool _isRedeemingVoucher = false;
+  String? _currentVoucherData;
 
   @override
   void dispose() {
-    cameraController.dispose();
+    controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       appBar: AppBar(
-        title: const Text('Scan Customer Voucher'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
+        title: const Text(
+          'Scan QR Code',
+          style: TextStyle(color: Colors.white),
+        ),
+        backgroundColor: Colors.black,
+        iconTheme: const IconThemeData(color: Colors.white),
         actions: [
           IconButton(
-            icon: Icon(_isFlashOn ? Icons.flash_on : Icons.flash_off),
             onPressed: () {
-              setState(() {
-                _isFlashOn = !_isFlashOn;
-              });
-              cameraController.toggleTorch();
+              controller.toggleTorch();
             },
+            icon: const Icon(Icons.flash_on, color: Colors.yellow),
+          ),
+          IconButton(
+            onPressed: () {
+              controller.switchCamera();
+            },
+            icon: const Icon(Icons.camera_rear, color: Colors.white),
           ),
         ],
       ),
       body: Stack(
         children: [
-          // Camera View
+          // Camera Preview
           MobileScanner(
-            controller: cameraController,
+            controller: controller,
             onDetect: _onDetect,
           ),
           
-          // Scan Area Overlay
-          _buildScanOverlay(),
+          // Overlay with scanning frame
+          _buildScanningOverlay(),
           
-          // Instructions
-          Positioned(
-            bottom: 100,
-            left: 20,
-            right: 20,
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.black87,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(
-                    Icons.qr_code_scanner,
-                    color: Colors.white,
-                    size: 32,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Point camera at customer\'s voucher QR code',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Make sure the QR code is clearly visible',
-                    style: TextStyle(
-                      color: Colors.grey.shade300,
-                      fontSize: 14,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          
-          // Loading Overlay
+          // Status indicator
           if (_isRedeemingVoucher)
             Container(
               color: Colors.black54,
               child: const Center(
                 child: Column(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
                     ),
                     SizedBox(height: 16),
                     Text(
                       'Processing voucher...',
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: 16,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                   ],
@@ -131,105 +94,43 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
     );
   }
 
-  Widget _buildScanOverlay() {
-    return Center(
-      child: Container(
-        width: 250,
-        height: 250,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: _isScanning ? Colors.green : Colors.white,
-            width: 3,
-          ),
-          borderRadius: BorderRadius.circular(12),
+  Widget _buildScanningOverlay() {
+    return Container(
+      decoration: ShapeDecoration(
+        shape: QrScannerOverlayShape(
+          borderColor: _isScanning ? Colors.green : Colors.grey,
+          borderRadius: 10,
+          borderLength: 30,
+          borderWidth: 10,
+          cutOutSize: 250,
         ),
-        child: Stack(
-          children: [
-            // Corner decorations
-            ..._buildCornerDecorations(),
-            
-            // Scan animation
-            if (_isScanning)
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.green.withOpacity(0.3),
-                        blurRadius: 10,
-                        spreadRadius: 2,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-          ],
+      ),
+      child: Container(
+        alignment: Alignment.bottomCenter,
+        padding: const EdgeInsets.only(bottom: 100),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.black54,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(
+            _isScanning 
+              ? 'Point camera at QR code'
+              : 'Scanning paused',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ),
     );
   }
 
-
-Future<void> testDirectFirestoreAccess(String purchaseId) async {
-  try {
-    debugPrint('🔍 === DIRECT FIRESTORE TEST ===');
-    
-    // Check authentication
-    final user = FirebaseAuth.instance.currentUser;
-    debugPrint('🔍 User authenticated: ${user != null}');
-    debugPrint('🔍 User ID: ${user?.uid}');
-    
-    if (user == null) {
-      debugPrint('❌ User not authenticated');
-      return;
-    }
-    
-    // Try to read the specific purchase directly
-    debugPrint('🔍 Attempting to read purchase: $purchaseId');
-    
-    final doc = await FirebaseFirestore.instance
-        .collection('purchases')
-        .doc(purchaseId)
-        .get();
-    
-    debugPrint('🔍 Document exists: ${doc.exists}');
-    
-    if (doc.exists) {
-      final data = doc.data();
-      debugPrint('🔍 Document data: $data');
-      debugPrint('🔍 Status: ${data?['status']}');
-      debugPrint('🔍 QR Code: ${data?['qrCode']}');
-      debugPrint('🔍 User ID: ${data?['userId']}');
-    } else {
-      debugPrint('❌ Document does not exist');
-      
-      // List all purchases to see what's available
-      final allPurchases = await FirebaseFirestore.instance
-          .collection('purchases')
-          .limit(5)
-          .get();
-      
-      debugPrint('🔍 Available purchases:');
-      for (final purchase in allPurchases.docs) {
-        debugPrint('  - ID: ${purchase.id}, Status: ${purchase.data()['status']}');
-      }
-    }
-    
-  } catch (e) {
-    debugPrint('❌ Firestore access error: $e');
-    
-    // Check if it's a permission error
-    if (e.toString().contains('permission') || e.toString().contains('PERMISSION_DENIED')) {
-      debugPrint('❌ This is a PERMISSION ERROR - Check your Firestore Rules!');
-    }
-  }
-}
-
-// Call this in your QR scanner when you scan the code:
-// await testDirectFirestoreAccess('TaloKk1tVM44du6xhYDy');
-  List<Widget> _buildCornerDecorations() {
-    const double cornerSize = 30;
+  List<Widget> _buildCornerOverlays() {
+    const double cornerSize = 40;
     const double cornerThickness = 4;
     final Color cornerColor = _isScanning ? Colors.green : Colors.white;
 
@@ -316,131 +217,404 @@ Future<void> testDirectFirestoreAccess(String purchaseId) async {
     setState(() {
       _isScanning = false;
       _isRedeemingVoucher = true;
+      _currentVoucherData = qrCodeData;
     });
 
     try {
       final redemptionService = Provider.of<RedemptionService>(context, listen: false);
       
-      //await testDirectFirestoreAccess('TaloKk1tVM44du6xhYDy');
       // First verify the voucher
       final voucher = await redemptionService.verifyVoucher(qrCodeData);
       
       if (voucher == null) {
-        _showErrorDialog(redemptionService.errorMessage ?? 'Invalid voucher');
+        _showErrorSnackBar(redemptionService.errorMessage ?? 'Invalid voucher');
         return;
       }
 
       // Check voucher status
       if (voucher.isRedeemed) {
-        _showErrorDialog('This voucher has already been redeemed');
+        _showErrorSnackBar('This voucher has already been redeemed');
         return;
       }
 
       if (voucher.isExpired) {
-        _showErrorDialog('This voucher has expired');
+        _showErrorSnackBar('This voucher has expired');
         return;
       }
 
-      // Show confirmation dialog
-      final shouldRedeem = await _showRedemptionConfirmationDialog(voucher);
+      // Show confirmation bottom sheet instead of dialog
+      final shouldRedeem = await _showRedemptionConfirmationBottomSheet(voucher);
       
       if (shouldRedeem) {
-        // Redeem the voucher
-        final redeemedVoucher = await redemptionService.redeemVoucher(qrCodeData);
-        
-        if (redeemedVoucher != null) {
-          // Navigate to success screen
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (context) => RedemptionSuccessScreen(
-                  redeemedVoucher: redeemedVoucher,
-                ),
-              ),
-            );
-          }
-        } else {
-          _showErrorDialog(redemptionService.errorMessage ?? 'Failed to redeem voucher');
-        }
+        // Continue processing in the background while showing loading
+        _redeemVoucher(qrCodeData, redemptionService);
+      } else {
+        // User cancelled, resume scanning
+        _resumeScanning();
       }
 
     } catch (e) {
       debugPrint('❌ Error processing QR code: $e');
-      _showErrorDialog('Error processing voucher: $e');
+      _showErrorSnackBar('Error processing voucher: $e');
+    }
+  }
+
+  Future<void> _redeemVoucher(String qrCodeData, RedemptionService redemptionService) async {
+    try {
+      // Redeem the voucher
+      final redeemedVoucher = await redemptionService.redeemVoucher(qrCodeData);
+      
+      if (redeemedVoucher != null) {
+        // Navigate to success screen using Go Router
+        if (mounted && context.canPop()) {
+          // Use Go Router navigation instead of Navigator
+          context.go('/redemption-success', extra: redeemedVoucher);
+        }
+      } else {
+        _showErrorSnackBar(redemptionService.errorMessage ?? 'Failed to redeem voucher');
+      }
+    } catch (e) {
+      debugPrint('❌ Error redeeming voucher: $e');
+      _showErrorSnackBar('Error redeeming voucher: $e');
     } finally {
       if (mounted) {
         setState(() {
           _isRedeemingVoucher = false;
           _isScanning = true;
+          _currentVoucherData = null;
         });
       }
     }
   }
 
-  Future<bool> _showRedemptionConfirmationDialog(Purchase voucher) async {
-    return await showDialog<bool>(
+  Future<bool> _showRedemptionConfirmationBottomSheet(Purchase voucher) async {
+    final result = await showModalBottomSheet<bool>(
       context: context,
-      barrierDismissible: false,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Confirm Redemption'),
-          content: Column(
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
+          ),
+          padding: const EdgeInsets.all(24),
+          child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Deal: ${voucher.dealTitle}'),
-              const SizedBox(height: 8),
-              Text('Business: ${voucher.businessName}'),
-              const SizedBox(height: 8),
-              Text('Amount: \$${voucher.amount.toStringAsFixed(2)} CAD'),
-              const SizedBox(height: 8),
-              Text('Voucher ID: ${voucher.id.substring(0, 8).toUpperCase()}'),
-              const SizedBox(height: 16),
-              const Text(
-                'Are you sure you want to redeem this voucher?',
-                style: TextStyle(fontWeight: FontWeight.bold),
+              // Handle bar
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
               ),
+              const SizedBox(height: 20),
+              
+              // Title
+              const Text(
+                'Confirm Redemption',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Voucher details
+              _buildDetailRow('Deal:', voucher.dealTitle),
+              const SizedBox(height: 12),
+              _buildDetailRow('Business:', voucher.businessName),
+              const SizedBox(height: 12),
+              _buildDetailRow('Amount:', '\$${voucher.amount.toStringAsFixed(2)} CAD'),
+              const SizedBox(height: 12),
+              _buildDetailRow('Voucher ID:', voucher.id.substring(0, 8).toUpperCase()),
+              
+              const SizedBox(height: 24),
+              
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle, color: Colors.green.shade600),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Are you sure you want to redeem this voucher?',
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              const SizedBox(height: 24),
+              
+              // Action buttons
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () => Navigator.of(context).pop(false),
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        side: BorderSide(color: Colors.grey.shade400),
+                      ),
+                      child: const Text('Cancel'),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(true),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      child: const Text('Redeem'),
+                    ),
+                  ),
+                ],
+              ),
+              
+              // Add bottom padding for safe area
+              SizedBox(height: MediaQuery.of(context).padding.bottom),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Redeem'),
-            ),
-          ],
         );
       },
-    ) ?? false;
+    );
+    
+    return result ?? false;
   }
 
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Error'),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                setState(() {
-                  _isScanning = true;
-                });
-              },
-              child: const Text('OK'),
+  Widget _buildDetailRow(String label, String value) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 100,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey.shade600,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showErrorSnackBar(String message) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(fontSize: 16),
+              ),
             ),
           ],
-        );
-      },
+        ),
+        backgroundColor: Colors.red.shade600,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        action: SnackBarAction(
+          label: 'OK',
+          textColor: Colors.white,
+          onPressed: () {
+            ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          },
+        ),
+      ),
+    );
+    
+    // Resume scanning after showing error
+    _resumeScanning();
+  }
+
+  void _showSuccessSnackBar(String message) {
+    if (!mounted) return;
+    
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Colors.green.shade600,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _resumeScanning() {
+    if (mounted) {
+      setState(() {
+        _isRedeemingVoucher = false;
+        _isScanning = true;
+        _currentVoucherData = null;
+      });
+    }
+  }
+}
+
+// Custom overlay shape for QR scanner
+class QrScannerOverlayShape extends ShapeBorder {
+  const QrScannerOverlayShape({
+    this.borderColor = Colors.red,
+    this.borderWidth = 3.0,
+    this.overlayColor = const Color.fromRGBO(0, 0, 0, 80),
+    this.borderRadius = 0,
+    this.borderLength = 40,
+    this.cutOutSize = 250,
+  });
+
+  final Color borderColor;
+  final double borderWidth;
+  final Color overlayColor;
+  final double borderRadius;
+  final double borderLength;
+  final double cutOutSize;
+
+  @override
+  EdgeInsetsGeometry get dimensions => const EdgeInsets.all(10);
+
+  @override
+  Path getInnerPath(Rect rect, {TextDirection? textDirection}) {
+    return Path()
+      ..fillType = PathFillType.evenOdd
+      ..addPath(getOuterPath(rect), Offset.zero);
+  }
+
+  @override
+  Path getOuterPath(Rect rect, {TextDirection? textDirection}) {
+    Path path = Path()..addRect(rect);
+    Path oval = Path()
+      ..addRRect(
+        RRect.fromRectAndRadius(
+          Rect.fromCenter(
+            center: rect.center,
+            width: cutOutSize,
+            height: cutOutSize,
+          ),
+          Radius.circular(borderRadius),
+        ),
+      );
+    return Path.combine(PathOperation.difference, path, oval);
+  }
+
+  @override
+  void paint(Canvas canvas, Rect rect, {TextDirection? textDirection}) {
+    final width = rect.width;
+    final borderWidthSize = width / 2;
+    final height = rect.height;
+    final borderOffset = borderWidth / 2;
+    final borderLength = this.borderLength > cutOutSize / 2 + borderWidth * 2
+        ? borderWidthSize / 2
+        : this.borderLength;
+    final cutOutWidth = cutOutSize + borderWidth;
+    final cutOutHeight = cutOutSize + borderWidth;
+
+    final cutOutRect = Rect.fromLTWH(
+      rect.left + width / 2 - cutOutWidth / 2 + borderOffset,
+      rect.top + height / 2 - cutOutHeight / 2 + borderOffset,
+      cutOutWidth - borderOffset * 2,
+      cutOutHeight - borderOffset * 2,
+    );
+
+    final backgroundPaint = Paint()
+      ..color = overlayColor
+      ..style = PaintingStyle.fill;
+
+    final borderPaint = Paint()
+      ..color = borderColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = borderWidth;
+
+    final backgroundRect = Rect.fromLTWH(0, 0, rect.width, rect.height);
+
+    // Draw overlay background
+    canvas.saveLayer(backgroundRect, backgroundPaint);
+    canvas.drawRect(backgroundRect, backgroundPaint);
+
+    // Cut out the scanning area
+    canvas.drawRRect(
+      RRect.fromRectAndRadius(cutOutRect, Radius.circular(borderRadius)),
+      Paint()..blendMode = BlendMode.clear,
+    );
+    canvas.restore();
+
+    // Draw corner borders
+    final path = Path()
+      // Top left corner
+      ..moveTo(cutOutRect.left - borderOffset, cutOutRect.top + borderLength)
+      ..lineTo(cutOutRect.left - borderOffset, cutOutRect.top)
+      ..lineTo(cutOutRect.left + borderLength, cutOutRect.top)
+      // Top right corner
+      ..moveTo(cutOutRect.right - borderLength, cutOutRect.top)
+      ..lineTo(cutOutRect.right + borderOffset, cutOutRect.top)
+      ..lineTo(cutOutRect.right + borderOffset, cutOutRect.top + borderLength)
+      // Bottom right corner
+      ..moveTo(cutOutRect.right + borderOffset, cutOutRect.bottom - borderLength)
+      ..lineTo(cutOutRect.right + borderOffset, cutOutRect.bottom)
+      ..lineTo(cutOutRect.right - borderLength, cutOutRect.bottom)
+      // Bottom left corner
+      ..moveTo(cutOutRect.left + borderLength, cutOutRect.bottom)
+      ..lineTo(cutOutRect.left - borderOffset, cutOutRect.bottom)
+      ..lineTo(cutOutRect.left - borderOffset, cutOutRect.bottom - borderLength);
+
+    canvas.drawPath(path, borderPaint);
+  }
+
+  @override
+  ShapeBorder scale(double t) {
+    return QrScannerOverlayShape(
+      borderColor: borderColor,
+      borderWidth: borderWidth,
+      overlayColor: overlayColor,
     );
   }
 }

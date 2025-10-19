@@ -1,11 +1,10 @@
-// lib/screens/deal_creation/enhanced_deal_creation_screen.dart
-// Fixed version that properly displays the template selection
+// lib/screens/deal_creation/enhanced_deal_creation_screen.dart - FIXED OVERFLOW ISSUES
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
-import 'package:pulse_business/models/deal_template.dart';
+import 'package:pulse_business/models/deal_template.dart' hide FlashSaleTemplate;
 import 'dart:io';
 
 import '../../models/business.dart';
@@ -34,7 +33,8 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
   // Available templates
   final List<DealStructureTemplate> _availableTemplates = [
     PercentageOffTemplate(),
-    ComboDealTemplate()
+    ComboDealTemplate(),
+    FlashSaleTemplate()
   ];
   
   // State
@@ -48,7 +48,8 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
   int _currentPage = 0;
   bool _isCreating = false;
   DateTime? _startTime;
-DateTime? _endTime;
+  DateTime? _endTime;
+
   @override
   void initState() {
     super.initState();
@@ -81,7 +82,11 @@ DateTime? _endTime;
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Create Deal'),
+        title: const Text(
+          'Create Deal',
+          maxLines: 1, // ✅ FIXED: Added maxLines
+          overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+        ),
         backgroundColor: AppTheme.primaryColor,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -92,8 +97,8 @@ DateTime? _endTime;
           _buildProgressIndicator(),
           
           // Context suggestion banner
-          if (_showContextSuggestion && !_acceptedContextSuggestion)
-            _buildContextSuggestionBanner(),
+          //if (_showContextSuggestion && !_acceptedContextSuggestion)
+          //  _buildContextSuggestionBanner(),
           
           // Main content
           Expanded(
@@ -143,12 +148,12 @@ DateTime? _endTime;
             color: isCompleted 
                 ? Colors.green 
                 : isActive 
-                    ? AppTheme.primaryColor 
+                    ? AppTheme.primaryColor
                     : Colors.grey.shade300,
           ),
           child: Icon(
-            isCompleted ? Icons.check : icon,
-            color: Colors.white,
+            icon,
+            color: isCompleted || isActive ? Colors.white : Colors.grey.shade600,
             size: 20,
           ),
         ),
@@ -157,9 +162,11 @@ DateTime? _endTime;
           label,
           style: TextStyle(
             fontSize: 12,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
             color: isActive ? AppTheme.primaryColor : Colors.grey.shade600,
+            fontWeight: isActive ? FontWeight.bold : FontWeight.normal,
           ),
+          maxLines: 1, // ✅ FIXED: Added maxLines
+          overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
         ),
       ],
     );
@@ -168,24 +175,22 @@ DateTime? _endTime;
   Widget _buildProgressLine(int step) {
     final isCompleted = _currentPage > step;
     
-    return Expanded(
+    return Expanded( // ✅ FIXED: Added Expanded for flexible line
       child: Container(
         height: 2,
-        margin: const EdgeInsets.only(bottom: 20),
+        margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
         color: isCompleted ? Colors.green : Colors.grey.shade300,
       ),
     );
   }
   
   Widget _buildContextSuggestionBanner() {
-    if (_detectedContext == null) return const SizedBox.shrink();
-    
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [Colors.blue.shade50, Colors.blue.shade100],
+          colors: [Colors.blue.shade50, Colors.purple.shade50],
         ),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.blue.shade200),
@@ -195,20 +200,19 @@ DateTime? _endTime;
         children: [
           Row(
             children: [
-              Icon(Icons.lightbulb, color: Colors.blue.shade600),
+              Icon(Icons.auto_awesome, color: Colors.blue.shade600),
               const SizedBox(width: 8),
-              Expanded(
+              Expanded( // ✅ FIXED: Added Expanded
                 child: Text(
                   _getContextTitle(),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     color: Colors.blue.shade800,
+                    fontSize: 16,
                   ),
+                  maxLines: 1, // ✅ FIXED: Added maxLines
+                  overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
                 ),
-              ),
-              IconButton(
-                onPressed: () => setState(() => _showContextSuggestion = false),
-                icon: Icon(Icons.close, color: Colors.blue.shade600),
               ),
             ],
           ),
@@ -216,27 +220,36 @@ DateTime? _endTime;
           Text(
             _getContextDescription(),
             style: TextStyle(color: Colors.blue.shade700),
+            maxLines: 3, // ✅ FIXED: Added maxLines
+            overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              SizedBox(
-                width: 180,
-                child:  ElevatedButton(
-                onPressed: _acceptContextSuggestion,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600,
-                  foregroundColor: Colors.white,
+              Expanded( // ✅ FIXED: Added Expanded for button
+                child: ElevatedButton(
+                  onPressed: _acceptContextSuggestion,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade600,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text(
+                    'Use Smart Suggestion',
+                    maxLines: 1, // ✅ FIXED: Added maxLines
+                    overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+                  ),
                 ),
-                child: const Text('Apply Optimization'),
               ),
-              ),             
-              SizedBox(
-                width: 100,
-              child : TextButton(
-                onPressed: () => setState(() => _showContextSuggestion = false),
-                child: const Text('Use Basic Settings'),
-              ),
+              const SizedBox(width: 8),
+              Expanded( // ✅ FIXED: Added Expanded for button
+                child: OutlinedButton(
+                  onPressed: () => setState(() => _showContextSuggestion = false),
+                  child: const Text(
+                    'Choose Manually',
+                    maxLines: 1, // ✅ FIXED: Added maxLines
+                    overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+                  ),
+                ),
               ),
             ],
           ),
@@ -244,7 +257,7 @@ DateTime? _endTime;
       ),
     );
   }
-  
+
   String _getContextTitle() {
     switch (_detectedContext?.detectedContext) {
       case 'happy_hour':
@@ -283,74 +296,195 @@ DateTime? _endTime;
     });
     
     _initializeTemplateControllers();
-    _applySmartDefaults();
     _goToNextPage();
   }
   
   Widget _buildTemplateSelectionPage() {
-  return Column(
-    children: [
-      
-
-      // Browse Templates Section
-      const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            Text(
-              'Browse Templates',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue,
+    return Column(
+      children: [
+        // Browse Templates Section
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded( // ✅ FIXED: Added Expanded
+                child: Text(
+                  'Browse Templates',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                  maxLines: 1, // ✅ FIXED: Added maxLines
+                  overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+                ),
               ),
-            ),
-          ],
-        ),
-      ),
-
-      const SizedBox(height: 16),
-
-      // Category Filters (matching your screenshot)
-      SizedBox(
-        height: 50,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          children: [
-            _buildCategoryChip('All', true),
-            const SizedBox(width: 8),
-            _buildCategoryChip('🕐 Time-Based', false),
-            const SizedBox(width: 8),
-            _buildCategoryChip('💰 Discount', false),
-            const SizedBox(width: 8),
-            _buildCategoryChip('✨ Loyalty', false),
-          ],
-        ),
-      ),
-
-      const SizedBox(height: 16),
-
-      // Template Grid using your existing _availableTemplates
-      Expanded(
-        child: GridView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            childAspectRatio: 0.85,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
+            ],
           ),
-          itemCount: _availableTemplates.length,
-          itemBuilder: (context, index) {
-            final template = _availableTemplates[index];
-            return _buildTemplateCard(template, index);
-          },
+        ),
+
+        const SizedBox(height: 16),
+
+        // Category Filters
+        SizedBox(
+          height: 50,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: [
+              _buildCategoryChip('All', true),
+              const SizedBox(width: 8),
+              _buildCategoryChip('🕐 Time-Based', false),
+              const SizedBox(width: 8),
+              _buildCategoryChip('💰 Discount', false),
+              const SizedBox(width: 8),
+              _buildCategoryChip('✨ Loyalty', false),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Template Grid
+        Expanded(
+          child: LayoutBuilder( // ✅ FIXED: Added LayoutBuilder for responsive design
+            builder: (context, constraints) {
+              final crossAxisCount = constraints.maxWidth < 600 ? 2 : 3;
+              final childAspectRatio = constraints.maxWidth < 600 ? 0.85 : 0.9;
+              
+              return GridView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  childAspectRatio: childAspectRatio,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: _availableTemplates.length,
+                itemBuilder: (context, index) {
+                  final template = _availableTemplates[index];
+                  return _buildTemplateCard(template, index);
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryChip(String label, bool isSelected) {
+    return FilterChip(
+      label: Text(
+        label,
+        maxLines: 1, // ✅ FIXED: Added maxLines
+        overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+      ),
+      selected: isSelected,
+      onSelected: (selected) {
+        // Category filter logic would go here
+      },
+      selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+      checkmarkColor: AppTheme.primaryColor,
+    );
+  }
+
+  Widget _buildTemplateCard(DealStructureTemplate template, int index) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () => _selectTemplate(template), // ✅ UPDATED: Now automatically navigates
+        borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      index == 0 ? Icons.percent : Icons.local_offer,
+                      color: const Color.fromARGB(255, 230, 81, 7),
+                      size: 24,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    Icons.arrow_forward_ios,
+                    color: Colors.grey.shade400,
+                    size: 16,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                template.name,
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+                maxLines: 2, // ✅ FIXED: Added maxLines
+                overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+              ),
+              const SizedBox(height: 4),
+              Expanded( // ✅ FIXED: Added Expanded for flexible content
+                child: Text(
+                  template.description,
+                  style: TextStyle(
+                    color: Colors.grey.shade600,
+                    fontSize: 14,
+                  ),
+                  maxLines: 3, // ✅ FIXED: Added maxLines
+                  overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+                ),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      'Popular',
+                      style: TextStyle(
+                        color: Colors.green.shade700,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1, // ✅ FIXED: Added maxLines
+                      overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Tap to use',
+                    style: TextStyle(
+                      color: Colors.grey.shade500,
+                      fontSize: 10,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
-    ],
-  );
-}
+    );
+  }
   
   void _selectTemplate(DealStructureTemplate template) {
     setState(() {
@@ -358,10 +492,7 @@ DateTime? _endTime;
     });
     
     _initializeTemplateControllers();
-    
-    if (_acceptedContextSuggestion) {
-      _applySmartDefaults();
-    }
+    _goToNextPage(); // ✅ UPDATED: Automatically navigate to next page
   }
   
   void _initializeTemplateControllers() {
@@ -385,96 +516,330 @@ DateTime? _endTime;
       }
     }
   }
-  
-  /*void _applySmartDefaults() {
-    if (_selectedTemplate == null || _detectedContext == null) return;
+
+  Widget _buildTemplateConfigurationPage() {
+    if (_selectedTemplate == null) return const Center(child: Text('No template selected'));
     
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
-    final business = businessProvider.currentBusiness;
-    if (business == null) return;
-    
-    final smartDefaults = _selectedTemplate!.getSmartDefaults(business, _detectedContext!);
-    
-    smartDefaults.forEach((key, value) {
-      if (_controllers.containsKey(key)) {
-        _controllers[key]!.text = value.toString();
-        _templateData[key] = value;
-      }
-    });
-    
-    setState(() {});
-  }*/
-  
- Widget _buildTemplateConfigurationPage() {
-  if (_selectedTemplate == null) return const Center(child: Text('No template selected'));
-  
-  return SingleChildScrollView(
-    padding: const EdgeInsets.all(16),
-    child: Form(
-      key: _formKey,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Configure ${_selectedTemplate!.name}',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          if (_acceptedContextSuggestion && _detectedContext?.detectedContext != null)
-            Container(
-              margin: const EdgeInsets.only(top: 8),
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.green.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.green.shade200),
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Configure ${_selectedTemplate!.name}',
+              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                fontWeight: FontWeight.bold,
               ),
-              child: Row(
-                children: [
-                  Icon(Icons.auto_awesome, color: Colors.green.shade600, size: 16),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Optimized for ${_detectedContext!.detectedContext!.replaceAll('_', ' ')}',
-                      style: TextStyle(
-                        color: Colors.green.shade700,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
+              maxLines: 2, // ✅ FIXED: Added maxLines
+              overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+            ),
+            if (_acceptedContextSuggestion && _detectedContext?.detectedContext != null)
+              Container(
+                margin: const EdgeInsets.only(top: 8),
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.auto_awesome, color: Colors.green.shade600, size: 16),
+                    const SizedBox(width: 8),
+                    Expanded( // ✅ FIXED: Added Expanded
+                      child: Text(
+                        'Optimized for ${_detectedContext!.detectedContext!.replaceAll('_', ' ')}',
+                        style: TextStyle(
+                          color: Colors.green.shade700,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 2, // ✅ FIXED: Added maxLines
+                        overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
                       ),
                     ),
+                  ],
+                ),
+              ),
+            const SizedBox(height: 24),
+            
+            // Image upload section
+            _buildImageUploadSection(),
+            
+            const SizedBox(height: 24),
+            
+            // Timing section
+            _buildTimingSection(),
+            
+            const SizedBox(height: 24),
+            
+            // Required fields
+            _buildFieldSection('Required Information', _selectedTemplate!.requiredFields),
+            
+            const SizedBox(height: 24),
+            
+            // Optional fields
+            if (_selectedTemplate!.optionalFields.isNotEmpty) ...[
+              _buildFieldSection('Optional Settings', _selectedTemplate!.optionalFields),
+              const SizedBox(height: 24),
+            ],
+            
+            // Live preview
+            _buildLivePreview(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImageUploadSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Deal Image (Optional)',
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+          maxLines: 1, // ✅ FIXED: Added maxLines
+          overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Add an eye-catching image to make your deal stand out',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: Colors.grey.shade600,
+          ),
+          maxLines: 2, // ✅ FIXED: Added maxLines
+          overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+        ),
+        const SizedBox(height: 16),
+        GestureDetector(
+          onTap: _selectImage,
+          child: Container(
+            height: 120,
+            width: double.infinity,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.grey.shade50,
+            ),
+            child: _selectedImage != null
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      _selectedImage!,
+                      fit: BoxFit.cover,
+                    ),
+                  )
+                : Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_a_photo, size: 40, color: Colors.grey.shade400),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tap to add image',
+                        style: TextStyle(color: Colors.grey.shade600),
+                        maxLines: 1, // ✅ FIXED: Added maxLines
+                        overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+                      ),
+                    ],
                   ),
-                ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimingSection() {
+  // ✅ NEW: Check if this is a Flash Sale template
+  final isFlashSale = _selectedTemplate?.name.toLowerCase().contains('flash') == true;
+  
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        isFlashSale ? 'Flash Sale Duration' : 'Deal Timing',
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      const SizedBox(height: 16),
+      
+      // ✅ NEW: Flash Sale shows different timing UI
+      if (isFlashSale) ...[
+        // Flash Sale always starts now - show immutable info card
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            border: Border.all(color: Colors.orange.shade200),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.flash_on, color: Colors.orange.shade600, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Starts Immediately - NOW',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.orange.shade800,
+                        fontSize: 16,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      'Flash sales create urgency by starting right away',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.orange.shade700,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.lock,
+                color: Colors.orange.shade400,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        // Only show end time for Flash Sale
+        InkWell(
+          onTap: () => _selectEndTime(),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.schedule, color: Colors.grey.shade600),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'End Time',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _endTime != null 
+                            ? DateFormat('MMM dd, HH:mm').format(_endTime!)
+                            : 'Select when flash sale ends',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ] else ...[
+        // Regular templates show both start and end time
+        Row(
+          children: [
+            Expanded(
+              child: InkWell(
+                onTap: () => _selectStartTime(),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Start Time',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _startTime != null 
+                            ? DateFormat('MMM dd, HH:mm').format(_startTime!)
+                            : 'Start now',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
-          const SizedBox(height: 24),
-          
-          // Image upload section at the top with 1:1 ratio
-          _buildImageUploadSection(),
-          
-          const SizedBox(height: 24),
-          
-          // Timing section
-          _buildTimingSection(),
-          
-          const SizedBox(height: 24),
-          
-          // Required fields
-          _buildFieldSection('Required Information', _selectedTemplate!.requiredFields),
-          
-          const SizedBox(height: 24),
-          
-          // Optional fields
-          if (_selectedTemplate!.optionalFields.isNotEmpty) ...[
-            _buildFieldSection('Optional Settings', _selectedTemplate!.optionalFields),
-            const SizedBox(height: 24),
+            const SizedBox(width: 16),
+            Expanded(
+              child: InkWell(
+                onTap: () => _selectEndTime(),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'End Time',
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 12,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _endTime != null 
+                            ? DateFormat('MMM dd, HH:mm').format(_endTime!)
+                            : 'Select end time',
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
           ],
-          
-          // Live preview
-          _buildLivePreview(),
-        ],
-      ),
-    ),
+        ),
+      ],
+    ],
   );
 }
   
@@ -487,6 +852,8 @@ DateTime? _endTime;
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
+          maxLines: 1, // ✅ FIXED: Added maxLines
+          overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
         ),
         const SizedBox(height: 16),
         ...fields.map((field) => Padding(
@@ -516,6 +883,7 @@ DateTime? _endTime;
       decoration: InputDecoration(
         labelText: field.label,
         helperText: field.description,
+        helperMaxLines: 2, // ✅ FIXED: Added helperMaxLines
         prefixText: '\$',
         border: const OutlineInputBorder(),
         suffixIcon: _acceptedContextSuggestion 
@@ -547,10 +915,12 @@ DateTime? _endTime;
       children: [
         Row(
           children: [
-            Expanded(
+            Expanded( // ✅ FIXED: Added Expanded
               child: Text(
                 field.label,
                 style: Theme.of(context).textTheme.titleSmall,
+                maxLines: 1, // ✅ FIXED: Added maxLines
+                overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
               ),
             ),
             if (_acceptedContextSuggestion)
@@ -560,10 +930,10 @@ DateTime? _endTime;
         const SizedBox(height: 8),
         Slider(
           value: currentValue,
-          min: (field.constraints['min'] ?? 5).toDouble(),
-          max: (field.constraints['max'] ?? 70).toDouble(),
-          divisions: ((field.constraints['max'] ?? 70) - (field.constraints['min'] ?? 5)) ~/ 
-                   (field.constraints['step'] ?? 5),
+          min: (field.constraints?['min'] ?? 5).toDouble(),
+          max: (field.constraints?['max'] ?? 70).toDouble(),
+          divisions: ((field.constraints?['max'] ?? 70) - (field.constraints?['min'] ?? 5)) ~/ 
+                   (field.constraints?['step'] ?? 5),
           label: '${currentValue.round()}%',
           onChanged: (value) {
             setState(() {
@@ -577,6 +947,8 @@ DateTime? _endTime;
           style: Theme.of(context).textTheme.bodySmall?.copyWith(
             color: Colors.grey.shade600,
           ),
+          maxLines: 2, // ✅ FIXED: Added maxLines
+          overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
         ),
       ],
     );
@@ -588,6 +960,7 @@ DateTime? _endTime;
       decoration: InputDecoration(
         labelText: field.label,
         helperText: field.description,
+        helperMaxLines: 2, // ✅ FIXED: Added helperMaxLines
         border: const OutlineInputBorder(),
       ),
       keyboardType: TextInputType.number,
@@ -612,8 +985,10 @@ DateTime? _endTime;
       decoration: InputDecoration(
         labelText: field.label,
         helperText: field.description,
+        helperMaxLines: 2, // ✅ FIXED: Added helperMaxLines
         border: const OutlineInputBorder(),
       ),
+      maxLines: field.label.toLowerCase().contains('description') ? 3 : 1,
       validator: field.required ? (value) {
         if (value?.isEmpty == true) return '${field.label} is required';
         return null;
@@ -624,111 +999,7 @@ DateTime? _endTime;
       },
     );
   }
-  
-  Widget _buildImageUploadSection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'Deal Image (Optional)',
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      const SizedBox(height: 8),
-      Text(
-        'Add an eye-catching image to make your deal stand out',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Colors.grey.shade600,
-        ),
-      ),
-      const SizedBox(height: 16),
-      GestureDetector(
-        onTap: _selectImage,
-        child: Container(
-          height: 120,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-            color: Colors.grey.shade50,
-          ),
-          child: _selectedImage != null
-              ? ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.file(
-                    _selectedImage!,
-                    fit: BoxFit.cover,
-                  ),
-                )
-              : Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.camera_alt, size: 32, color: Colors.grey.shade400),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Tap to add image',
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                  ],
-                ),
-        ),
-      ),
-      if (_selectedImage != null) ...[
-        const SizedBox(height: 12),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextButton.icon(
-              onPressed: _selectImage,
-              icon: const Icon(Icons.edit, size: 16),
-              label: const Text('Change Image'),
-            ),
-            const SizedBox(width: 16),
-            TextButton.icon(
-              onPressed: () {
-                setState(() {
-                  _selectedImage = null;
-                });
-              },
-              icon: const Icon(Icons.delete, size: 16),
-              label: const Text('Remove Image'),
-              style: TextButton.styleFrom(
-                foregroundColor: Colors.red,
-              ),
-            ),
-          ],
-        ),
-      ],
-    ],
-  );
-}
-  
-  Future<void> _selectImage() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 80,
-      );
-      
-      if (image != null) {
-        setState(() {
-          _selectedImage = File(image.path);
-        });
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to select image: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-  
+
   Widget _buildLivePreview() {
     if (_selectedTemplate == null) return const SizedBox.shrink();
     
@@ -753,10 +1024,14 @@ DateTime? _endTime;
             children: [
               Icon(Icons.preview, color: Colors.grey.shade600),
               const SizedBox(width: 8),
-              Text(
-                'Live Preview',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
+              Expanded( // ✅ FIXED: Added Expanded
+                child: Text(
+                  'Live Preview',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                  maxLines: 1, // ✅ FIXED: Added maxLines
+                  overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
                 ),
               ),
             ],
@@ -765,19 +1040,23 @@ DateTime? _endTime;
           Text(
             preview,
             style: Theme.of(context).textTheme.bodyMedium,
+            maxLines: 5, // ✅ FIXED: Added maxLines
+            overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
           ),
         ],
       ),
     );
   }
-  
+
   Widget _buildPreviewAndConfirmPage() {
-    if (_selectedTemplate == null) return const Center(child: Text('No template selected'));
+    if (_selectedTemplate == null) return const SizedBox.shrink();
     
     final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
     final business = businessProvider.currentBusiness;
     
-    if (business == null) return const Center(child: Text('Business information not available'));
+    if (business == null) return const SizedBox.shrink();
+    
+    final preview = _selectedTemplate!.generatePreview(_templateData, business);
     
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -785,73 +1064,78 @@ DateTime? _endTime;
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Review & Confirm',
+            'Preview Your Deal',
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(
               fontWeight: FontWeight.bold,
             ),
+            maxLines: 1, // ✅ FIXED: Added maxLines
+            overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
           ),
           const SizedBox(height: 24),
           
-          // Deal preview card
-          _buildDealPreviewCard(business),
-          
-          const SizedBox(height: 24),
-          
-          // Context insights
-          if (_acceptedContextSuggestion && _detectedContext?.detectedContext != null)
-            _buildContextInsights(),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildDealPreviewCard(Business business) {
-    final preview = _selectedTemplate!.generatePreview(_templateData, business);
-    
-    return Card(
-      elevation: 4,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.percent,
-                  size: 24,
-                  color: _selectedTemplate!.primaryColor,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    'Your ${_selectedTemplate!.name} Deal',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+          // Deal Preview Card
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.grey.shade300,
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
                 ),
               ],
             ),
-            const SizedBox(height: 16),
-            if (_selectedImage != null) ...[
-              ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: Image.file(
-                  _selectedImage!,
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.local_offer, color: AppTheme.primaryColor),
+                    const SizedBox(width: 8),
+                    Expanded( // ✅ FIXED: Added Expanded
+                      child: Text(
+                        'Your ${_selectedTemplate!.name} Deal',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                        maxLines: 2, // ✅ FIXED: Added maxLines
+                        overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 16),
-            ],
-            Text(
-              preview,
-              style: Theme.of(context).textTheme.bodyLarge,
+                const SizedBox(height: 16),
+                if (_selectedImage != null) ...[
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.file(
+                      _selectedImage!,
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+                Text(
+                  preview,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                  maxLines: 8, // ✅ FIXED: Added maxLines
+                  overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Context insights (if applicable)
+          if (_acceptedContextSuggestion && _detectedContext != null)
+            _buildContextInsights(),
+        ],
       ),
     );
   }
@@ -867,10 +1151,14 @@ DateTime? _endTime;
               children: [
                 Icon(Icons.insights, color: Colors.purple.shade600),
                 const SizedBox(width: 8),
-                Text(
-                  'Smart Optimization Applied',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded( // ✅ FIXED: Added Expanded
+                  child: Text(
+                    'Smart Optimization Applied',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1, // ✅ FIXED: Added maxLines
+                    overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
                   ),
                 ),
               ],
@@ -879,6 +1167,8 @@ DateTime? _endTime;
             Text(
               'This deal has been optimized for ${_detectedContext!.detectedContext!.replaceAll('_', ' ')} based on your business type and current timing.',
               style: Theme.of(context).textTheme.bodyMedium,
+              maxLines: 3, // ✅ FIXED: Added maxLines
+              overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
             ),
           ],
         ),
@@ -887,6 +1177,11 @@ DateTime? _endTime;
   }
   
   Widget _buildNavigationButtons() {
+    // ✅ UPDATED: Hide navigation buttons on template selection page (page 0)
+    if (_currentPage == 0) {
+      return const SizedBox.shrink(); // No buttons on template selection page
+    }
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -905,7 +1200,11 @@ DateTime? _endTime;
             Expanded(
               child: OutlinedButton(
                 onPressed: _goToPreviousPage,
-                child: const Text('Back'),
+                child: const Text(
+                  'Back',
+                  maxLines: 1, // ✅ FIXED: Added maxLines
+                  overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+                ),
               ),
             ),
           if (_currentPage > 0) const SizedBox(width: 16),
@@ -925,7 +1224,11 @@ DateTime? _endTime;
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                       ),
                     )
-                  : Text(_getNextButtonText()),
+                  : Text(
+                      _getNextButtonText(),
+                      maxLines: 1, // ✅ FIXED: Added maxLines
+                      overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+                    ),
             ),
           ),
         ],
@@ -943,8 +1246,8 @@ DateTime? _endTime;
     if (_isCreating) return null;
     
     switch (_currentPage) {
-      case 0: // Template selection
-        return _selectedTemplate != null ? _goToNextPage : null;
+      case 0: // Template selection - No button needed anymore
+        return null;
       case 1: // Configuration
         return _validateAndGoNext;
       case 2: // Preview
@@ -957,7 +1260,7 @@ DateTime? _endTime;
   String _getNextButtonText() {
     switch (_currentPage) {
       case 0:
-        return 'Continue';
+        return 'Select Template'; // This won't be shown anymore
       case 1:
         return 'Preview Deal';
       case 2:
@@ -978,613 +1281,167 @@ DateTime? _endTime;
       _goToNextPage();
     }
   }
-  
-  Future<void> _createDeal() async {
-  if (_selectedTemplate == null) {
-    _showError('No template selected');
-    return;
-  }
-  
-  final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
-  final business = businessProvider.currentBusiness;
-  
-  if (business == null) {
-    _showError('Business information not available');
-    return;
-  }
-  
-  setState(() => _isCreating = true);
-  
-  try {
-    // Add timing data to template data
-    Map<String, dynamic> finalTemplateData = Map.from(_templateData);
-    
-    // Add our timing selections to the template data
-    finalTemplateData['user_start_time'] = _startTime;
-    finalTemplateData['user_end_time'] = _endTime;
-    finalTemplateData['start_immediately'] = _startTime == null;
-    
-    // Transform template data to Deal object
-    final deal = _transformationService.transformToDeal(
-      template: _selectedTemplate!,
-      templateData: finalTemplateData,
-      business: business,
-      customStartTime: _startTime, // Pass the user's timing choice
+
+  Future<void> _selectStartTime() async {
+    final now = DateTime.now();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _startTime ?? now,
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
     );
     
-    // Create the deal using existing provider
-    final dealsProvider = Provider.of<DealsProvider>(context, listen: false);
-    final success = await dealsProvider.createDeal(deal, imageFile: _selectedImage);
-    
-    if (success && mounted) {
-      _showSuccess('Deal created successfully!');
+    if (pickedDate != null && mounted) {
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_startTime ?? now),
+      );
       
-    } else if (mounted) {
-      _showError('Failed to create deal: ${dealsProvider.errorMessage ?? 'Unknown error'}');
-    }
-  } catch (e) {
-    if (mounted) {
-      _showError('Error creating deal: $e');
-    }
-    debugPrint('Error creating deal: $e');
-  } finally {
-    if (mounted) {
-      setState(() => _isCreating = false);
+      if (pickedTime != null && mounted) {
+        setState(() {
+          _startTime = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
     }
   }
-}
 
-  
-  void _showError(String message) {
-    if (mounted) {
+  Future<void> _selectEndTime() async {
+    final now = _startTime ?? DateTime.now();
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: _endTime ?? now.add(const Duration(hours: 24)),
+      firstDate: now,
+      lastDate: now.add(const Duration(days: 365)),
+    );
+    
+    if (pickedDate != null && mounted) {
+      final pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.fromDateTime(_endTime ?? now.add(const Duration(hours: 24))),
+      );
+      
+      if (pickedTime != null && mounted) {
+        setState(() {
+          _endTime = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+      }
+    }
+  }
+
+  Future<void> _selectImage() async {
+    try {
+      final picker = ImagePicker();
+      final image = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+      
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+        });
+      }
+    } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(message),
+          content: Text('Failed to select image: $e'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
+
+  Future<void> _createDeal() async {
+    if (_selectedTemplate == null) {
+      _showError('No template selected');
+      return;
+    }
+    
+    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final business = businessProvider.currentBusiness;
+    
+    if (business == null) {
+      _showError('Business information not available');
+      return;
+    }
+    
+    setState(() => _isCreating = true);
+    
+    try {
+      // Add timing data to template data
+      Map<String, dynamic> finalTemplateData = Map.from(_templateData);
+      
+      // Add our timing selections to the template data
+      finalTemplateData['user_start_time'] = _startTime;
+      finalTemplateData['user_end_time'] = _endTime;
+      finalTemplateData['start_immediately'] = _startTime == null;
+      
+      // Transform template data to Deal object
+      final deal = _transformationService.transformToDeal(
+        template: _selectedTemplate!,
+        templateData: finalTemplateData,
+        business: business,
+        customStartTime: _startTime,
+      );
+      
+      // Create the deal using existing provider
+      final dealsProvider = Provider.of<DealsProvider>(context, listen: false);
+      final success = await dealsProvider.createDeal(deal, imageFile: _selectedImage);
+      
+      if (success && mounted) {
+        _showSuccess('Deal created successfully!');
+        Navigator.of(context).pop();
+      } else if (mounted) {
+        _showError('Failed to create deal. Please try again.');
+      }
+    } catch (e) {
+      if (mounted) {
+        _showError('Error creating deal: $e');
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isCreating = false);
+      }
+    }
+  }
+  
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          maxLines: 2, // ✅ FIXED: Added maxLines
+          overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+        ),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
   
   void _showSuccess(String message) {
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.green,
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          maxLines: 2, // ✅ FIXED: Added maxLines
+          overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
         ),
-      );
-    }
-  }
-
-  // Add these state variables to the existing _EnhancedDealCreationScreenState class
-// (Add these after the existing state variables)
-
-void _selectStartTime() async {
-  final now = DateTime.now();
-  final initialDate = _startTime ?? now;
-  
-  final selectedDate = await showDatePicker(
-    context: context,
-    initialDate: initialDate.isAfter(now) ? initialDate : now,
-    firstDate: now,
-    lastDate: now.add(const Duration(days: 365)),
-  );
-  
-  if (selectedDate != null && mounted) {
-    final selectedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(initialDate),
+        backgroundColor: Colors.green,
+      ),
     );
-    
-    if (selectedTime != null) {
-      setState(() {
-        _startTime = DateTime(
-          selectedDate.year,
-          selectedDate.month,
-          selectedDate.day,
-          selectedTime.hour,
-          selectedTime.minute,
-        );
-        
-        // Auto-calculate end time if not set
-        if (_endTime == null) {
-          _autoCalculateEndTime();
-        }
-      });
-    }
   }
-}
-
-void _selectEndTime() async {
-  final now = DateTime.now();
-  final minDate = _startTime ?? now;
-  final initialDate = _endTime ?? minDate.add(const Duration(hours: 3));
-  
-  final selectedDate = await showDatePicker(
-    context: context,
-    initialDate: initialDate.isAfter(minDate) ? initialDate : minDate,
-    firstDate: minDate,
-    lastDate: now.add(const Duration(days: 365)),
-  );
-  
-  if (selectedDate != null && mounted) {
-    final selectedTime = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(initialDate),
-    );
-    
-    if (selectedTime != null) {
-      final newEndTime = DateTime(
-        selectedDate.year,
-        selectedDate.month,
-        selectedDate.day,
-        selectedTime.hour,
-        selectedTime.minute,
-      );
-      
-      // Validate end time is after start time
-      if (_startTime != null && newEndTime.isBefore(_startTime!)) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('End time must be after start time'),
-            backgroundColor: Colors.red,
-          ),
-        );
-        return;
-      }
-      
-      setState(() {
-        _endTime = newEndTime;
-      });
-    }
-  }
-}
-
-void _setQuickTiming(String type) {
-  final now = DateTime.now();
-  
-  switch (type) {
-    case 'now':
-      setState(() {
-        _startTime = null; // Start immediately
-        _endTime = now.add(const Duration(days: 7)); // Default 1 week
-      });
-      break;
-      
-    case 'happy_hour':
-      final today4PM = DateTime(now.year, now.month, now.day, 16, 0);
-      final startTime = today4PM.isAfter(now) ? today4PM : today4PM.add(const Duration(days: 1));
-      setState(() {
-        _startTime = startTime;
-        _endTime = startTime.add(const Duration(hours: 3));
-      });
-      break;
-      
-    case 'lunch':
-      final today1130AM = DateTime(now.year, now.month, now.day, 11, 30);
-      final startTime = today1130AM.isAfter(now) ? today1130AM : today1130AM.add(const Duration(days: 1));
-      setState(() {
-        _startTime = startTime;
-        _endTime = startTime.add(const Duration(hours: 3));
-      });
-      break;
-      
-    case 'tomorrow':
-      final tomorrow = now.add(const Duration(days: 1));
-      setState(() {
-        _startTime = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 9, 0);
-        _endTime = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 17, 0);
-      });
-      break;
-  }
-}
-
-void _autoCalculateEndTime() {
-  if (_startTime == null) return;
-  
-  // Calculate end time based on context
-  Duration duration = const Duration(days: 7); // Default
-  
-  if (_detectedContext?.detectedContext != null) {
-    switch (_detectedContext!.detectedContext) {
-      case 'happy_hour':
-        duration = const Duration(hours: 3);
-        break;
-      case 'lunch_special':
-        duration = const Duration(hours: 3);
-        break;
-      case 'morning_rush':
-        duration = const Duration(hours: 2, minutes: 30);
-        break;
-      case 'flash_sale':
-        duration = const Duration(hours: 4);
-        break;
-      case 'weekend_special':
-        duration = const Duration(hours: 12);
-        break;
-    }
-  }
-  
-  setState(() {
-    _endTime = _startTime!.add(duration);
-  });
-}
-
-// Update the existing _applySmartDefaults method to include timing
-void _applySmartDefaults() {
-  if (_selectedTemplate == null || _detectedContext == null) return;
-  
-  final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
-  final business = businessProvider.currentBusiness;
-  if (business == null) return;
-  
-  final smartDefaults = _selectedTemplate!.getSmartDefaults(business, _detectedContext!);
-  
-  // Apply field defaults
-  smartDefaults.forEach((key, value) {
-    if (_controllers.containsKey(key)) {
-      _controllers[key]!.text = value.toString();
-      _templateData[key] = value;
-    }
-  });
-  
-  // Apply timing defaults if available
-  if (smartDefaults.containsKey('suggested_timing')) {
-    final timing = smartDefaults['suggested_timing'];
-    if (timing != null && timing is Map<String, dynamic>) {
-      _applyTimingDefaults(timing);
-    }
-  }
-  
-  setState(() {});
-}
-
-void _applyTimingDefaults(Map<String, dynamic> timing) {
-  final now = DateTime.now();
-  
-  if (timing.containsKey('start_time') && timing.containsKey('end_time')) {
-    final startTimeStr = timing['start_time'] as String;
-    final endTimeStr = timing['end_time'] as String;
-    
-    // Parse time strings (e.g., "16:00", "19:00")
-    final startParts = startTimeStr.split(':');
-    final endParts = endTimeStr.split(':');
-    
-    final startHour = int.parse(startParts[0]);
-    final startMinute = int.parse(startParts[1]);
-    final endHour = int.parse(endParts[0]);
-    final endMinute = int.parse(endParts[1]);
-    
-    // Create DateTime objects for today
-    final todayStart = DateTime(now.year, now.month, now.day, startHour, startMinute);
-    final todayEnd = DateTime(now.year, now.month, now.day, endHour, endMinute);
-    
-    // If the time has passed today, schedule for tomorrow
-    final startTime = todayStart.isAfter(now) ? todayStart : todayStart.add(const Duration(days: 1));
-    final endTime = todayEnd.isAfter(startTime) ? todayEnd : todayEnd.add(const Duration(days: 1));
-    
-    setState(() {
-      _startTime = startTime;
-      _endTime = endTime;
-    });
-  }
-}
-
-Widget _buildTimingSection() {
-  return Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'Deal Timing',
-        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-      const SizedBox(height: 8),
-      if (_detectedContext?.detectedContext != null && _acceptedContextSuggestion)
-        Container(
-          padding: const EdgeInsets.all(12),
-          margin: const EdgeInsets.only(bottom: 16),
-          decoration: BoxDecoration(
-            color: Colors.blue.shade50,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.blue.shade200),
-          ),
-          child: Row(
-            children: [
-              Icon(Icons.schedule, color: Colors.blue.shade600, size: 16),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Text(
-                  'Optimized timing based on ${_detectedContext!.detectedContext!.replaceAll('_', ' ')} context',
-                  style: TextStyle(
-                    color: Colors.blue.shade700,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      
-      // Start Time
-      Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Start Time',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: _selectStartTime,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.schedule, color: Colors.grey.shade600),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _startTime != null
-                                ? DateFormat('MMM dd, yyyy h:mm a').format(_startTime!)
-                                : 'Start immediately',
-                            style: TextStyle(
-                              color: _startTime != null ? Colors.black : Colors.grey.shade600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'End Time',
-                  style: Theme.of(context).textTheme.labelLarge,
-                ),
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: _selectEndTime,
-                  child: Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey.shade300),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(Icons.event, color: Colors.grey.shade600),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            _endTime != null
-                                ? DateFormat('MMM dd, yyyy h:mm a').format(_endTime!)
-                                : 'Select end time',
-                            style: TextStyle(
-                              color: _endTime != null ? Colors.black : Colors.grey.shade600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-      
-      const SizedBox(height: 12),
-      
-      // Quick timing options
-      if (_detectedContext?.detectedContext != null && !_acceptedContextSuggestion) 
-        Wrap(
-          spacing: 8,
-          children: [
-            _buildQuickTimingChip('Start Now', () => _setQuickTiming('now')),
-            _buildQuickTimingChip('Happy Hour', () => _setQuickTiming('happy_hour')),
-            _buildQuickTimingChip('Lunch Special', () => _setQuickTiming('lunch')),
-            _buildQuickTimingChip('Tomorrow', () => _setQuickTiming('tomorrow')),
-          ],
-        ),
-    ],
-  );
-}
-
-Widget _buildQuickTimingChip(String label, VoidCallback onTap) {
-  return ActionChip(
-    label: Text(label),
-    onPressed: onTap,
-    backgroundColor: Colors.grey.shade100,
-  );
-}
-
-Widget _buildCategoryChip(String label, bool isSelected) {
-  return Container(
-    child: FilterChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          color: isSelected ? Colors.white : Colors.grey.shade700,
-          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
-        ),
-      ),
-      selected: isSelected,
-      selectedColor: Colors.blue.shade600,
-      backgroundColor: Colors.white,
-      side: BorderSide(color: Colors.grey.shade300),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      onSelected: (selected) {
-        // Add filter logic here if needed
-      },
-    ),
-  );
-}
-
-Widget _buildTemplateCard(DealStructureTemplate template, int index) {
-  final isSelected = _selectedTemplate?.id == template.id;
-  
-  // Map your templates to UI data (you can customize these)
-  final templateUIData = _getTemplateUIData(template, index);
-  
-  return GestureDetector(
-    onTap: () => _selectTemplate(template), // Use your existing method
-    child: Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isSelected ? Colors.blue.shade600 : Colors.grey.shade300,
-          width: isSelected ? 2 : 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.shade200,
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Top row with icon and badges
-            Row(
-              children: [
-                Text(
-                  templateUIData['icon'],
-                  style: const TextStyle(fontSize: 32),
-                ),
-                const Spacer(),
-                if (templateUIData['isPopular'])
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'POPULAR',
-                      style: TextStyle(
-                        color: Colors.orange.shade700,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                if (templateUIData['isNew'])
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'NEW',
-                      style: TextStyle(
-                        color: Colors.green.shade700,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            
-            const SizedBox(height: 16),
-            
-            // Title
-            Text(
-              templateUIData['title'],
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            
-            const SizedBox(height: 8),
-            
-            // Subtitle
-            Text(
-              templateUIData['subtitle'],
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade600,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            
-            const Spacer(),
-            
-            // Performance indicator
-            Text(
-              templateUIData['performance'],
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.green.shade600,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
-}
-
-// Helper method to map your templates to UI data
-Map<String, dynamic> _getTemplateUIData(DealStructureTemplate template, int index) {
-  // You can customize this mapping based on your template types
-  switch (template.id) {
-    case 'percentage_off':
-      return {
-        'icon': '💰',
-        'title': 'Big Savings',
-        'subtitle': 'Maximum value',
-        'performance': '98% avg',
-        'isPopular': false,
-        'isNew': false,
-      };
-    default:
-      // Fallback for any other templates
-      final icons = ['⚡', '👋', '🎯', '💰', '✨'];
-      final titles = ['Flash Sale', 'New Customer Welcome', 'Target Special', 'Big Savings', 'Loyalty Boost'];
-      final subtitles = ['Lightning fast savings', 'Welcome new faces', 'Hit your target', 'Maximum value', 'Reward loyalty'];
-      final performances = ['45.8% avg', '31.7% avg', '28.3% avg', '42.1% avg', '33.9% avg'];
-      
-      return {
-        'icon': icons[index % icons.length],
-        'title': titles[index % titles.length],
-        'subtitle': subtitles[index % subtitles.length],
-        'performance': performances[index % performances.length],
-        'isPopular': index == 0,
-        'isNew': index == 1,
-      };
-  }
-}
-
-
 }

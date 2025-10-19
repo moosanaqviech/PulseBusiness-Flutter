@@ -444,16 +444,199 @@ class ComboDealTemplate extends DealStructureTemplate {
         defaults['combo_price'] = 6.99;
         break;
         
-      case 'bar':
-        defaults['combo_title'] = 'Happy Hour Special';
-        defaults['combo_items'] = 'Beer + Appetizer';
-        defaults['combo_price'] = 9.99;
-        break;
-        
       default:
         defaults['combo_title'] = 'Value Bundle';
         defaults['combo_items'] = 'Main Item + Bonus Item';
         defaults['combo_price'] = 12.99;
+    }
+    
+    return defaults;
+  }
+}
+
+class FlashSaleTemplate extends DealStructureTemplate {
+  @override
+  String get id => 'flash_sale';
+  
+  @override
+  String get name => 'Flash Sale';
+  
+  @override
+  String get description => 'Limited time offer that starts immediately with high discount and limited quantity';
+  
+  @override
+  String get icon => '⚡';
+  
+  @override
+  Color get primaryColor => Colors.orange;
+  
+  @override
+  List<TemplateField> get requiredFields => [
+    const TemplateField(
+      id: 'flash_title',
+      label: 'Flash Sale Title',
+      description: 'Catchy title for your flash sale (e.g., "24-Hour Flash Sale!")',
+      type: FieldType.text,
+      required: true,
+      constraints: {
+        'maxLength': 60,
+        'placeholder': '24-Hour Flash Sale!',
+      },
+    ),
+    const TemplateField(
+      id: 'discount_percentage',
+      label: 'Discount Percentage',
+      description: 'Flash sales need at least 25% off to create urgency',
+      type: FieldType.percentage,
+      required: true,
+      defaultValue: 25.0,
+      constraints: {
+        'min': 25,
+        'max': 75,
+        'step': 5,
+      },
+    ),
+    const TemplateField(
+      id: 'original_price',
+      label: 'Original Price',
+      description: 'Regular price before the flash sale discount',
+      type: FieldType.currency,
+      required: true,
+      constraints: {
+        'min': 1.00,
+        'max': 1000.00,
+      },
+    ),
+    const TemplateField(
+      id: 'quantity_available',
+      label: 'Limited Quantity',
+      description: 'How many items available (creates scarcity)',
+      type: FieldType.number,
+      required: true,
+      defaultValue: 50,
+      constraints: {
+        'min': 1,
+        'max': 500,
+      },
+    ),
+  ];
+  
+  @override
+  List<TemplateField> get optionalFields => [
+    const TemplateField(
+      id: 'flash_description',
+      label: 'Additional Details',
+      description: 'Extra details about the flash sale or item',
+      type: FieldType.text,
+      required: false,
+      constraints: {
+        'maxLength': 150,
+        'placeholder': 'Limited time only! First come, first served.',
+      },
+    ),
+  ];
+  
+  @override
+  Map<String, String?> validateFields(Map<String, dynamic> data) {
+    final errors = <String, String?>{};
+    
+    // Validate title
+    final title = data['flash_title']?.toString()?.trim();
+    if (title == null || title.isEmpty) {
+      errors['flash_title'] = 'Flash sale title is required';
+    }
+    
+    // Validate discount percentage (minimum 25%)
+    final discountPercent = data['discount_percentage'];
+    if (discountPercent == null || discountPercent < 25) {
+      errors['discount_percentage'] = 'Flash sales require at least 25% discount';
+    }
+    
+    // Validate original price
+    final originalPrice = data['original_price'];
+    if (originalPrice == null || originalPrice <= 0) {
+      errors['original_price'] = 'Original price must be greater than 0';
+    }
+    
+    // Validate quantity
+    final quantity = data['quantity_available'];
+    if (quantity == null || quantity <= 0) {
+      errors['quantity_available'] = 'Quantity must be at least 1';
+    }
+    
+    return errors;
+  }
+   @override
+  String generatePreview(Map<String, dynamic> data, Business business) {
+    final title = data['flash_title'] ?? 'Flash Sale';
+    final discountPercent = data['discount_percentage'] ?? 25;
+    final originalPrice = data['original_price'] ?? 0.0;
+    final quantity = data['quantity_available'] ?? 50;
+    final extraDetails = data['flash_description'] ?? '';
+    
+    final discountedPrice = originalPrice * (1 - discountPercent / 100);
+    final savings = originalPrice - discountedPrice;
+    
+    String preview = '🔥 $title\n\n';
+    preview += 'FLASH SALE - Starting NOW!\n';
+    preview += 'Save $discountPercent% - Only \${discountedPrice.toStringAsFixed(2)} ';
+    preview += '(was \${originalPrice.toStringAsFixed(2)})\n';
+    preview += 'You save \${savings.toStringAsFixed(2)}!\n\n';
+    preview += '⚡ LIMITED: Only $quantity available\n';
+    preview += '⏰ HURRY: Sale ends soon!\n';
+    
+    if (extraDetails.isNotEmpty) {
+      preview += '\n$extraDetails';
+    }
+    
+    preview += '\n\nAvailable at ${business.name}';
+    
+    return preview;
+  }
+  
+  @override
+  Map<String, dynamic> getSmartDefaults(Business business, TemplateContext context) {
+    final Map<String, dynamic> defaults = {
+      'flash_title': '⚡ Flash Sale Alert!',
+      'discount_percentage': 30.0, // Higher default for flash sales
+      'quantity_available': 25, // Limited quantity creates urgency
+    };
+    
+    // Context-based adjustments
+    switch (context.detectedContext) {
+      case 'happy_hour':
+        defaults['flash_title'] = '🍻 Happy Hour Flash Sale!';
+        defaults['discount_percentage'] = 35.0;
+        break;
+      case 'lunch_special':
+        defaults['flash_title'] = '🍽️ Lunch Rush Flash Sale!';
+        defaults['quantity_available'] = 50;
+        break;
+      case 'weekend_special':
+        defaults['flash_title'] = '🎉 Weekend Flash Sale!';
+        defaults['discount_percentage'] = 40.0;
+        break;
+      case 'morning_rush':
+        defaults['flash_title'] = '☀️ Morning Flash Sale!';
+        defaults['quantity_available'] = 30;
+        break;
+    }
+    
+    // Business type adjustments
+    switch (business.category.toLowerCase()) {
+      case 'restaurant':
+      case 'food':
+        defaults['flash_title'] = '🍽️ Flash Food Deal!';
+        break;
+      case 'retail':
+      case 'clothing':
+        defaults['flash_title'] = '👕 Flash Fashion Sale!';
+        defaults['quantity_available'] = 15; // Clothing usually lower qty
+        break;
+      case 'service':
+        defaults['flash_title'] = '⚡ Service Flash Deal!';
+        defaults['quantity_available'] = 10; // Services are limited
+        break;
     }
     
     return defaults;

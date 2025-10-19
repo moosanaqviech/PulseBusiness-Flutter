@@ -399,7 +399,7 @@ class FlashSaleTemplate extends BaseTemplate {
       totalQuantity: 10, // Limited quantity for urgency
       businessId: business.id!,
       businessName: business.name,
-       startTime: customStartTime,  
+      //startTime: customStartTime,  
       isScheduled: customStartTime != null,
       expirationTime: DateTime.now().add(Duration(hours: 4)),
       termsAndConditions: 'Extremely limited time. While supplies last. No rain checks.',

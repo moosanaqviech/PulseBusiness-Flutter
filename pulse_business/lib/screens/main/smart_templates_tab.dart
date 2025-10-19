@@ -142,6 +142,8 @@ class _SmartTemplatesTabState extends State<SmartTemplatesTab> with AutomaticKee
                   fontWeight: FontWeight.bold,
                   color: Colors.white,
                 ),
+                maxLines: 1, // ✅ FIXED: Added maxLines
+                overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
               ),
               const SizedBox(height: 4),
               Text(
@@ -149,6 +151,8 @@ class _SmartTemplatesTabState extends State<SmartTemplatesTab> with AutomaticKee
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.white.withOpacity(0.9),
                 ),
+                maxLines: 2, // ✅ FIXED: Added maxLines
+                overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
               ),
             ],
           ),
@@ -180,12 +184,16 @@ class _SmartTemplatesTabState extends State<SmartTemplatesTab> with AutomaticKee
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
+              maxLines: 1, // ✅ FIXED: Added maxLines
+              overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
             ),
             const SizedBox(height: 8),
             Text(
               _errorMessage!,
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.red.shade700),
+              maxLines: 3, // ✅ FIXED: Added maxLines
+              overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
             ),
             const SizedBox(height: 16),
             ElevatedButton.icon(
@@ -215,13 +223,23 @@ class _SmartTemplatesTabState extends State<SmartTemplatesTab> with AutomaticKee
               children: [
                 Icon(Icons.auto_awesome, color: AppTheme.primaryColor, size: 24),
                 const SizedBox(width: 8),
-                Text(
-                  'Recommended for You Today',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    color: AppTheme.primaryColor,
+                Expanded( // ✅ FIXED: Added Expanded
+                  child: Text(
+                    'Recommended for You Today',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: AppTheme.primaryColor,
+                    ),
+                    maxLines: 1, // ✅ FIXED: Added maxLines
+                    overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
                   ),
                 ),
+                if (_isLoadingRecommendations)
+                  const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
               ],
             ),
             const SizedBox(height: 8),

@@ -9,7 +9,7 @@ import '../../providers/deals_provider.dart';
 import '../../utils/theme.dart';
 import 'dashboard_tab.dart';
 import 'create_deal_tab.dart';
-import 'enhanced_create_deal_tab.dart';
+//import 'enhanced_create_deal_tab.dart';
 import 'my_deals_tab.dart';
 import '../qr_scanner/qr_scanner_tab.dart';
 import 'smart_templates_tab.dart'; // NEW

@@ -95,6 +95,7 @@ class TemplateTransformationService {
       remainingQuantity: quantity,
       businessId: business.id!,
       businessName: business.name,
+      businessAddress: business.address,
       startTime: timing['startTime'],
       expirationTime: timing['expirationTime'],
       termsAndConditions: terms,
@@ -139,6 +140,7 @@ class TemplateTransformationService {
     remainingQuantity: 15,
     businessId: business.id!,
     businessName: business.name,
+    businessAddress: business.address,
     startTime: timing['startTime'],
     expirationTime: timing['expirationTime'],
     termsAndConditions: 'Combo items as listed. Cannot be combined with other offers. One per customer.',
@@ -442,7 +444,7 @@ DateTime _getDefaultExpirationTime(TemplateContext context, DateTime baseTime) {
       remainingQuantity: 20,
       businessId: business.id!,
       businessName: business.name,
-      
+      businessAddress: business.address,
       startTime: customStartTime ?? DateTime.now(),
       expirationTime: (customStartTime ?? DateTime.now()).add(Duration(days: 7)),
       termsAndConditions: 'Free item must be of equal or lesser value. One per customer. Cannot be combined with other offers.',
@@ -477,7 +479,7 @@ DateTime _getDefaultExpirationTime(TemplateContext context, DateTime baseTime) {
       remainingQuantity: 10,
       businessId: business.id!,
       businessName: business.name,
-     
+      businessAddress: business.address,
       startTime: customStartTime ?? DateTime.now(),
       expirationTime: (customStartTime ?? DateTime.now()).add(Duration(hours: 4)), // Short duration
       termsAndConditions: 'Extremely limited time. While supplies last. No rain checks. Final sale.',

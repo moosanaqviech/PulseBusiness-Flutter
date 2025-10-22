@@ -514,6 +514,7 @@ class _CreateDealTabState extends State<CreateDealTab> {
       totalQuantity: int.parse(_quantityController.text),
       businessId: business.id!,
       businessName: business.name,
+      businessAddress: business.address,
       expirationTime: _expirationTime,
       termsAndConditions: _termsController.text.trim().isEmpty 
           ? null 

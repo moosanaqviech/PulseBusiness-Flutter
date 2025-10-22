@@ -314,7 +314,6 @@ class PercentageOffTemplate extends DealStructureTemplate {
 }
 
 // Simple Combo Deal Template Implementation
-// Add this to your deal_structure_templates.dart file
 
 class ComboDealTemplate extends DealStructureTemplate {
   @override
@@ -417,7 +416,7 @@ class ComboDealTemplate extends DealStructureTemplate {
     
     String preview = '$title\n';
     preview += '$items\n';
-    preview += 'Price: \${comboPrice.toStringAsFixed(2)}';
+    preview += 'Price: \$${comboPrice.toStringAsFixed(2)}';
     
     if (extraDetails.isNotEmpty) {
       preview += '\n$extraDetails';

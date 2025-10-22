@@ -81,16 +81,6 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Create Deal',
-          maxLines: 1, // ✅ FIXED: Added maxLines
-          overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
-        ),
-        backgroundColor: AppTheme.primaryColor,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
       body: Column(
         children: [
           // Progress indicator
@@ -107,7 +97,7 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
               children: [
                 _buildTemplateSelectionPage(),
                 if (_selectedTemplate != null) _buildTemplateConfigurationPage(),
-                if (_selectedTemplate != null) _buildPreviewAndConfirmPage(),
+                if (_selectedTemplate != null) _buildDealPreviewCard(),
               ],
             ),
           ),
@@ -1048,6 +1038,287 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
     );
   }
 
+  // Replace the existing _buildDealPreviewCard method with this version
+// This version gets the business from provider instead of parameter
+
+Widget _buildDealPreviewCard() {
+  final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+  final business = businessProvider.currentBusiness;
+  
+  if (business == null) {
+    return const Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Text('Business information not available'),
+      ),
+    );
+  }
+  
+  final preview = _selectedTemplate!.generatePreview(_templateData, business);
+  
+  // Extract some basic deal data from template data for better preview
+  final dealPrice = _templateData['deal_price'] ?? _templateData['combo_price'] ?? 15.00;
+  final originalPrice = _templateData['original_price'] ?? dealPrice * 1.3;
+  final discountPercent = _templateData['discount_percentage'] ?? 
+    ((originalPrice - dealPrice) / originalPrice * 100).round();
+  
+  return Card(
+    elevation: 2,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Image section
+        Stack(
+          children: [
+            ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+                
+              child: AspectRatio(
+                aspectRatio: 16 / 9 ,
+                child: _selectedImage != null
+                    ? Image.file(
+                        _selectedImage!,
+                        fit: BoxFit.cover,
+                        width: double.infinity,
+                      )
+                    : Container(
+                        color: Colors.grey.shade100,
+                        child: Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_a_photo,
+                                color: Colors.grey.shade400,
+                                size: 48,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Add deal image',
+                                style: TextStyle(
+                                  color: Colors.grey.shade600,
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+              ),
+            ),
+            
+            // Discount badge (top-left)
+            if (discountPercent > 0)
+              Positioned(
+                top: 12,
+                left: 12,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${discountPercent}% OFF',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            
+            // Favorite button (top-right) - disabled in preview
+            Positioned(
+              top: 12,
+              right: 12,
+              child: Container(
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  icon: const Icon(Icons.favorite_border),
+                  onPressed: null, // Disabled in preview
+                  color: Colors.grey.shade400,
+                  iconSize: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
+        
+        // Content section
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Business name
+              Text(
+                business.name,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey.shade600,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              
+              // Deal title
+              Text(
+                _selectedTemplate!.name,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              
+              // Deal description (from preview)
+              Text(
+                preview,
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                  height: 1.3,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
+              
+              // Price section
+              Row(
+                children: [
+                  if (originalPrice != dealPrice) ...[
+                    Text(
+                      '\$${originalPrice.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey.shade500,
+                        decoration: TextDecoration.lineThrough,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Text(
+                    '\$${dealPrice.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.green,
+                    ),
+                  ),
+                  const Spacer(),
+                  
+                  // Distance (placeholder in preview)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 14,
+                          color: Colors.grey.shade600,
+                        ),
+                        const SizedBox(width: 2),
+                        Text(
+                          '0.5 mi',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              
+              // Bottom info row
+              Row(
+                children: [
+                  // Expiration
+                  Icon(
+                    Icons.access_time,
+                    size: 14,
+                    color: Colors.grey.shade500,
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Expires in 7 days',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const Spacer(),
+                  
+                  // Quantity remaining
+                  Text(
+                    '${_templateData['quantity'] ?? 10} left',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+              
+              // Preview label at bottom
+              const SizedBox(height: 16),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.blue.shade200),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.preview,
+                      size: 16,
+                      color: Colors.blue.shade700,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      'Preview - How customers will see your deal',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue.shade700,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+
   Widget _buildPreviewAndConfirmPage() {
     if (_selectedTemplate == null) return const SizedBox.shrink();
     
@@ -1404,7 +1675,7 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
       
       if (success && mounted) {
         _showSuccess('Deal created successfully!');
-        Navigator.of(context).pop();
+        //Navigator.of(context).pop();
       } else if (mounted) {
         _showError('Failed to create deal. Please try again.');
       }

@@ -9,7 +9,7 @@ import '../../services/template_manager.dart';
 import '../../models/deal_template.dart';
 import '../../models/business.dart';
 import '../../utils/theme.dart';
-import '../deal_creation/template_deal_creator.dart';
+//import '../deal_creation/template_deal_creator.dart';
 
 class SmartTemplatesTab extends StatefulWidget {
   const SmartTemplatesTab({super.key});

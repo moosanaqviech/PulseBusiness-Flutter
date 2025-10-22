@@ -100,7 +100,7 @@ class DashboardTab extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.analytics_outlined,
                   color: AppTheme.primaryColor,
                   size: 24,
@@ -227,7 +227,7 @@ class DashboardTab extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.trending_up,
                   color: AppTheme.primaryColor,
                   size: 24,
@@ -324,7 +324,7 @@ class DashboardTab extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.schedule,
                   color: AppTheme.primaryColor,
                   size: 24,
@@ -423,7 +423,7 @@ class DashboardTab extends StatelessWidget {
           children: [
             Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.flash_on,
                   color: AppTheme.primaryColor,
                   size: 24,

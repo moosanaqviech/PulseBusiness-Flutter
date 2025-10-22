@@ -11,6 +11,7 @@ class Deal {
   final int remainingQuantity;
   final String businessId;
   final String businessName;
+  final String businessAddress;
   final DateTime createdAt;
   final DateTime expirationTime;
   final String? imageUrl;
@@ -35,6 +36,7 @@ class Deal {
     int? remainingQuantity,
     required this.businessId,
     required this.businessName,
+    required this.businessAddress,
     DateTime? createdAt,
     required this.expirationTime,
     this.imageUrl,
@@ -64,6 +66,7 @@ class Deal {
       remainingQuantity: map['remainingQuantity'] ?? 0,
       businessId: map['businessId'] ?? '',
       businessName: map['businessName'] ?? '',
+      businessAddress: map['businessAddress'] ?? '',
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
       expirationTime: DateTime.fromMillisecondsSinceEpoch(map['expirationTime'] ?? 0),
       imageUrl: map['imageUrl'],
@@ -90,6 +93,7 @@ class Deal {
       'remainingQuantity': remainingQuantity,
       'businessId': businessId,
       'businessName': businessName,
+      'businessAddress' : businessAddress,
       'createdAt': createdAt.millisecondsSinceEpoch,
       'expirationTime': expirationTime.millisecondsSinceEpoch,
       'imageUrl': imageUrl,
@@ -174,6 +178,7 @@ class Deal {
       remainingQuantity: remainingQuantity ?? this.remainingQuantity,
       businessId: businessId ?? this.businessId,
       businessName: businessName ?? this.businessName,
+      businessAddress: businessAddress ?? this.businessAddress,
       createdAt: createdAt ?? this.createdAt,
       expirationTime: expirationTime ?? this.expirationTime,
       imageUrl: imageUrl ?? this.imageUrl,

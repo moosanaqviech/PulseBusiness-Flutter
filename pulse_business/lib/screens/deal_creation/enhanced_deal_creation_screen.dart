@@ -43,7 +43,7 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
   Map<String, dynamic> _templateData = {};
   Map<String, TextEditingController> _controllers = {};
   bool _showContextSuggestion = false;
-  bool _acceptedContextSuggestion = false;
+  bool _acceptedContextSuggestion = true;
   File? _selectedImage;
   int _currentPage = 0;
   bool _isCreating = false;
@@ -898,8 +898,11 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
   }
   
   Widget _buildPercentageField(TemplateField field) {
-    final currentValue = _templateData[field.id]?.toDouble() ?? field.defaultValue ?? 20.0;
-    
+    final defaultValue = field.defaultValue ?? 20.0;
+    final currentValue = _templateData[field.id]?.toDouble() ?? defaultValue;    
+    if (_templateData[field.id] == null) {
+    _templateData[field.id] = defaultValue;
+  }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -990,16 +993,29 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
     );
   }
 
-  Widget _buildLivePreview() {
-    if (_selectedTemplate == null) return const SizedBox.shrink();
+ Widget _buildLivePreview() {
+  if (_selectedTemplate == null) return const SizedBox.shrink();
+  
+  final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+  final business = businessProvider.currentBusiness;
+  
+  if (business == null) return const SizedBox.shrink();
+  
+  // ✅ NEW: Generate the ACTUAL deal that will be created
+  try {
+    Map<String, dynamic> finalTemplateData = Map.from(_templateData);
+    finalTemplateData['user_start_time'] = _startTime;
+    finalTemplateData['user_end_time'] = _endTime;
+    finalTemplateData['start_immediately'] = _startTime == null;
     
-    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
-    final business = businessProvider.currentBusiness;
+    final previewDeal = _transformationService.transformToDeal(
+      template: _selectedTemplate!,
+      templateData: finalTemplateData,
+      business: business,
+      customStartTime: _startTime,
+    );
     
-    if (business == null) return const SizedBox.shrink();
-    
-    final preview = _selectedTemplate!.generatePreview(_templateData, business);
-    
+    // ✅ Show the REAL title and description
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1014,33 +1030,122 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
             children: [
               Icon(Icons.preview, color: Colors.grey.shade600),
               const SizedBox(width: 8),
-              Expanded( // ✅ FIXED: Added Expanded
+              Expanded(
                 child: Text(
                   'Live Preview',
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                   ),
-                  maxLines: 1, // ✅ FIXED: Added maxLines
-                  overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
+          
+          // ✅ Show REAL title
           Text(
-            preview,
+            previewDeal.title,
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryColor,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 8),
+          
+          // ✅ Show REAL description
+          Text(
+            previewDeal.description,
             style: Theme.of(context).textTheme.bodyMedium,
-            maxLines: 5, // ✅ FIXED: Added maxLines
-            overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
+            maxLines: 3,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 12),
+          
+          // Show pricing
+          Row(
+            children: [
+              if (previewDeal.originalPrice != previewDeal.dealPrice) ...[
+                Text(
+                  '\$${previewDeal.originalPrice.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    decoration: TextDecoration.lineThrough,
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+              Text(
+                '\$${previewDeal.dealPrice.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.green,
+                ),
+              ),
+              if (previewDeal.discountPercentage > 0) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    '${previewDeal.discountPercentage}% OFF',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ],
           ),
         ],
       ),
     );
+  } catch (e) {
+    // ✅ Fallback to old preview if transformation fails
+    print('⚠️ Preview generation failed: $e');
+    final preview = _selectedTemplate!.generatePreview(_templateData, business);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.warning, color: Colors.orange.shade700, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'Preview (Approximate)',
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Colors.orange.shade700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(preview),
+        ],
+      ),
+    );
   }
+}
 
   // Replace the existing _buildDealPreviewCard method with this version
 // This version gets the business from provider instead of parameter
-
 Widget _buildDealPreviewCard() {
   final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
   final business = businessProvider.currentBusiness;
@@ -1054,269 +1159,266 @@ Widget _buildDealPreviewCard() {
     );
   }
   
-  final preview = _selectedTemplate!.generatePreview(_templateData, business);
-  
-  // Extract some basic deal data from template data for better preview
-  final dealPrice = _templateData['deal_price'] ?? _templateData['combo_price'] ?? 15.00;
-  final originalPrice = _templateData['original_price'] ?? dealPrice * 1.3;
-  final discountPercent = _templateData['discount_percentage'] ?? 
-    ((originalPrice - dealPrice) / originalPrice * 100).round();
-  
-  return Card(
-    elevation: 2,
-    shape: RoundedRectangleBorder(
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Image section
-        Stack(
-          children: [
-            ClipRRect(
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(12),
-                topRight: Radius.circular(12),
-              ),
-                
-              child: AspectRatio(
-                aspectRatio: 16 / 9 ,
-                child: _selectedImage != null
-                    ? Image.file(
-                        _selectedImage!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                      )
-                    : Container(
-                        color: Colors.grey.shade100,
-                        child: Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.add_a_photo,
-                                color: Colors.grey.shade400,
-                                size: 48,
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Add deal image',
-                                style: TextStyle(
-                                  color: Colors.grey.shade600,
-                                  fontSize: 14,
-                                ),
-                              ),
-                            ],
+  // ✅ NEW: Generate the ACTUAL deal using transformation service
+  try {
+    Map<String, dynamic> finalTemplateData = Map.from(_templateData);
+    finalTemplateData['user_start_time'] = _startTime;
+    finalTemplateData['user_end_time'] = _endTime;
+    finalTemplateData['start_immediately'] = _startTime == null;
+    
+    final previewDeal = _transformationService.transformToDeal(
+      template: _selectedTemplate!,
+      templateData: finalTemplateData,
+      business: business,
+      customStartTime: _startTime,
+    );
+    
+    // ✅ Show the REAL deal preview
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Preview Your Deal',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 24),
+          
+          // Deal Preview Card - Matches consumer app layout
+          Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Image section (if available)
+                if (_selectedImage != null)
+                  ClipRRect(
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(12),
+                      topRight: Radius.circular(12),
+                    ),
+                    child: AspectRatio(
+                          aspectRatio: 3 / 4,
+                          child: Image.file(
+                            _selectedImage!,
+                        
+                            fit: BoxFit.cover,
                           ),
                         ),
-                      ),
-              ),
-            ),
-            
-            // Discount badge (top-left)
-            if (discountPercent > 0)
-              Positioned(
-                top: 12,
-                left: 12,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.red,
-                    borderRadius: BorderRadius.circular(12),
                   ),
+                // Content section
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Business name
+                      Text(
+                        business.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      
+                      // Deal title
+                      Text(
+                        previewDeal.title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Deal description
+                      Text(
+                        previewDeal.description,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                          height: 1.3,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Price section
+                      Row(
+                        children: [
+                          if (previewDeal.originalPrice != previewDeal.dealPrice) ...[
+                            Text(
+                              '\$${previewDeal.originalPrice.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade500,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            '\$${previewDeal.dealPrice.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                          if (previewDeal.discountPercentage > 0) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${previewDeal.discountPercentage}% OFF',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Additional details
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Quantity:',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '${previewDeal.totalQuantity} available',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Expires:',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  _formatDateTime(previewDeal.expirationTime),
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Info banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
                   child: Text(
-                    '${discountPercent}% OFF',
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                    'This is exactly how customers will see your deal',
+                    style: TextStyle(
+                      color: Colors.blue.shade700,
+                      fontSize: 13,
                     ),
                   ),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    
+  } catch (e) {
+    // Fallback error view
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              'Error generating preview',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.red.shade700,
               ),
-            
-            // Favorite button (top-right) - disabled in preview
-            Positioned(
-              top: 12,
-              right: 12,
-              child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
-                child: IconButton(
-                  icon: const Icon(Icons.favorite_border),
-                  onPressed: null, // Disabled in preview
-                  color: Colors.grey.shade400,
-                  iconSize: 20,
-                ),
-              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              e.toString(),
+              style: TextStyle(color: Colors.grey.shade600),
+              textAlign: TextAlign.center,
             ),
           ],
         ),
-        
-        // Content section
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Business name
-              Text(
-                business.name,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const SizedBox(height: 4),
-              
-              // Deal title
-              Text(
-                _selectedTemplate!.name,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              
-              // Deal description (from preview)
-              Text(
-                preview,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade600,
-                  height: 1.3,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 12),
-              
-              // Price section
-              Row(
-                children: [
-                  if (originalPrice != dealPrice) ...[
-                    Text(
-                      '\$${originalPrice.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey.shade500,
-                        decoration: TextDecoration.lineThrough,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                  ],
-                  Text(
-                    '\$${dealPrice.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green,
-                    ),
-                  ),
-                  const Spacer(),
-                  
-                  // Distance (placeholder in preview)
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.grey.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.location_on,
-                          size: 14,
-                          color: Colors.grey.shade600,
-                        ),
-                        const SizedBox(width: 2),
-                        Text(
-                          '0.5 mi',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              
-              // Bottom info row
-              Row(
-                children: [
-                  // Expiration
-                  Icon(
-                    Icons.access_time,
-                    size: 14,
-                    color: Colors.grey.shade500,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    'Expires in 7 days',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const Spacer(),
-                  
-                  // Quantity remaining
-                  Text(
-                    '${_templateData['quantity'] ?? 10} left',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ],
-              ),
-              
-              // Preview label at bottom
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.blue.shade200),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.preview,
-                      size: 16,
-                      color: Colors.blue.shade700,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Preview - How customers will see your deal',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.blue.shade700,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
+      ),
+    );
+  }
+}
+
+// ✅ Add helper method for date formatting
+String _formatDateTime(DateTime dateTime) {
+  final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return '${months[dateTime.month - 1]} ${dateTime.day}, ${dateTime.year} at ${dateTime.hour > 12 ? dateTime.hour - 12 : dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')} ${dateTime.hour >= 12 ? 'PM' : 'AM'}';
 }
 
   Widget _buildPreviewAndConfirmPage() {

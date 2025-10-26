@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 class Deal {
   final String? id;
   final String title;
@@ -94,8 +96,8 @@ class Deal {
       'businessId': businessId,
       'businessName': businessName,
       'businessAddress' : businessAddress,
-      'createdAt': createdAt.millisecondsSinceEpoch,
-      'expirationTime': expirationTime.millisecondsSinceEpoch,
+      'createdAt': Timestamp.fromDate(createdAt), 
+      'expirationTime': Timestamp.fromDate(expirationTime), 
       'imageUrl': imageUrl,
       'isActive': isActive,
       'viewCount': viewCount,

@@ -49,6 +49,9 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
   bool _isCreating = false;
   DateTime? _startTime;
   DateTime? _endTime;
+  List<File> _selectedImages = []; // ✅ Changed from File? _selectedImage
+  int _currentPreviewImageIndex = 0; // ✅ For live preview
+  int _currentFullPreviewImageIndex = 0; // ✅ For preview tab
 
   @override
   void initState() {
@@ -584,7 +587,296 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
     );
   }
 
-  Widget _buildImageUploadSection() {
+// Change from single image to list
+//List<File> _selectedImages = []; // ✅ Changed from File? to List<File>
+
+Future<void> _selectImages() async {
+  // ✅ Check limit before opening picker
+  if (_selectedImages.length >= 5) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Maximum 5 images allowed'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    return;
+  }
+  
+  try {
+    final picker = ImagePicker();
+    
+    // ✅ Calculate how many more images we can add
+    final remainingSlots = 5 - _selectedImages.length;
+    
+    final images = await picker.pickMultiImage(
+      maxWidth: 1024,
+      maxHeight: 1024,
+      imageQuality: 80,
+      // Note: pickMultiImage doesn't have a limit parameter
+      // We'll enforce it after selection
+    );
+    
+    if (images != null && images.isNotEmpty) {
+      // ✅ Only add up to the remaining slots
+      final imagesToAdd = images.take(remainingSlots).map((img) => File(img.path)).toList();
+      
+      setState(() {
+        _selectedImages.addAll(imagesToAdd);
+      });
+      
+      // ✅ Show message if user tried to add too many
+      if (images.length > remainingSlots) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Added ${imagesToAdd.length} images. Maximum 5 images allowed.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+    }
+  } catch (e) {
+    _showError('Failed to select images: $e');
+  }
+}
+// ✅ Show all selected images
+Widget _buildImageUploadSection() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Text(
+            'Deal Images',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Spacer(),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: _selectedImages.length >= 5 
+                ? Colors.red.shade50 
+                : Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${_selectedImages.length}/5',
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                color: _selectedImages.length >= 5 
+                  ? Colors.red.shade700 
+                  : Colors.blue.shade700,
+              ),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      
+      if (_selectedImages.isEmpty) ...[
+        // Empty state - Show upload button
+        OutlinedButton.icon(
+          onPressed: _selectImages,
+          icon: const Icon(Icons.add_photo_alternate),
+          label: const Text('Add Images (up to 5)'),
+          style: OutlinedButton.styleFrom(
+            minimumSize: const Size(double.infinity, 50),
+          ),
+        ),
+        const SizedBox(height: 12),
+        
+        // Guidelines
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.tips_and_updates, 
+                    size: 16, 
+                    color: Colors.blue.shade700,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Photo Tips',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              _buildTip('✅ First image will be the main image'),
+              _buildTip('✅ Keep your product/dish centered'),
+              _buildTip('✅ Use good lighting'),
+              _buildTip('✅ Portrait photos work best'),
+            ],
+          ),
+        ),
+      ] else ...[
+        // Show selected images
+        Container(
+          height: 120,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: _selectedImages.length + (_selectedImages.length < 5 ? 1 : 0),
+            itemBuilder: (context, index) {
+              // Add more button at the end
+              if (index == _selectedImages.length) {
+                return GestureDetector(
+                  onTap: _selectImages,
+                  child: Container(
+                    width: 100,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey.shade300, width: 2),
+                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.grey.shade50,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add, color: Colors.grey.shade600, size: 32),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Add More',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey.shade600,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }
+              
+              // Image thumbnail
+              return Stack(
+                children: [
+                  Container(
+                    width: 100,
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: index == 0 ? Colors.blue : Colors.grey.shade300,
+                        width: index == 0 ? 3 : 1,
+                      ),
+                      image: DecorationImage(
+                        image: FileImage(_selectedImages[index]),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  
+                  // Primary badge
+                  if (index == 0)
+                    Positioned(
+                      top: 4,
+                      left: 4,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: Colors.blue,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Text(
+                          'MAIN',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  
+                  // Image number
+                  Positioned(
+                    bottom: 4,
+                    left: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black54,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        '${index + 1}',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  // Remove button
+                  Positioned(
+                    top: 4,
+                    right: 12,
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _selectedImages.removeAt(index);
+                        });
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Image removed'),
+                            duration: Duration(seconds: 1),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: const BoxDecoration(
+                          color: Colors.red,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
+    ],
+  );
+}
+
+Widget _buildTip(String text) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 4),
+    child: Text(
+      text,
+      style: TextStyle(
+        fontSize: 12,
+        color: Colors.blue.shade900,
+      ),
+    ),
+  );
+}
+  Widget _buildImageUploadSectionOld() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -993,7 +1285,7 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
     );
   }
 
- Widget _buildLivePreview() {
+Widget _buildLivePreview() {
   if (_selectedTemplate == null) return const SizedBox.shrink();
   
   final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
@@ -1001,7 +1293,7 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
   
   if (business == null) return const SizedBox.shrink();
   
-  // ✅ NEW: Generate the ACTUAL deal that will be created
+  // Generate the ACTUAL deal
   try {
     Map<String, dynamic> finalTemplateData = Map.from(_templateData);
     finalTemplateData['user_start_time'] = _startTime;
@@ -1015,7 +1307,6 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
       customStartTime: _startTime,
     );
     
-    // ✅ Show the REAL title and description
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1044,7 +1335,13 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
           ),
           const SizedBox(height: 12),
           
-          // ✅ Show REAL title
+          // ✅ NEW: Show image carousel if multiple images
+          if (_selectedImages.isNotEmpty) ...[
+            _buildImageCarouselPreview(),
+            const SizedBox(height: 12),
+          ],
+          
+          // Title
           Text(
             previewDeal.title,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
@@ -1056,7 +1353,7 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
           ),
           const SizedBox(height: 8),
           
-          // ✅ Show REAL description
+          // Description
           Text(
             previewDeal.description,
             style: Theme.of(context).textTheme.bodyMedium,
@@ -1065,7 +1362,7 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
           ),
           const SizedBox(height: 12),
           
-          // Show pricing
+          // Pricing
           Row(
             children: [
               if (previewDeal.originalPrice != previewDeal.dealPrice) ...[
@@ -1110,9 +1407,7 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
       ),
     );
   } catch (e) {
-    // ✅ Fallback to old preview if transformation fails
     print('⚠️ Preview generation failed: $e');
-    final preview = _selectedTemplate!.generatePreview(_templateData, business);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -1120,33 +1415,455 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.orange.shade300),
       ),
+      child: Text('Preview unavailable'),
+    );
+  }
+}
+
+// ✅ NEW: Image carousel for live preview
+Widget _buildImageCarouselPreview() {
+  if (_selectedImages.isEmpty) return SizedBox.shrink();
+  
+  return Container(
+    height: 150,
+    child: Stack(
+      children: [
+        PageView.builder(
+          itemCount: _selectedImages.length,
+          onPageChanged: (index) {
+            setState(() => _currentPreviewImageIndex = index);
+          },
+          itemBuilder: (context, index) {
+            return ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: Image.file(
+                _selectedImages[index],
+                fit: BoxFit.cover,
+              ),
+            );
+          },
+        ),
+        
+        // Image counter
+        if (_selectedImages.length > 1)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '${_currentPreviewImageIndex + 1}/${_selectedImages.length}',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+        
+        // Dot indicators
+        if (_selectedImages.length > 1)
+          Positioned(
+            bottom: 8,
+            left: 0,
+            right: 0,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                _selectedImages.length,
+                (index) => Container(
+                  margin: EdgeInsets.symmetric(horizontal: 2),
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _currentPreviewImageIndex == index
+                      ? Colors.white
+                      : Colors.white54,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+}
+
+Widget _buildDealPreviewCard() {
+  final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+  final business = businessProvider.currentBusiness;
+  
+  if (business == null) {
+    return const Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Text('Business information not available'),
+      ),
+    );
+  }
+  
+  try {
+    Map<String, dynamic> finalTemplateData = Map.from(_templateData);
+    finalTemplateData['user_start_time'] = _startTime;
+    finalTemplateData['user_end_time'] = _endTime;
+    finalTemplateData['start_immediately'] = _startTime == null;
+    
+    final previewDeal = _transformationService.transformToDeal(
+      template: _selectedTemplate!,
+      templateData: finalTemplateData,
+      business: business,
+      customStartTime: _startTime,
+    );
+    
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(Icons.warning, color: Colors.orange.shade700, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Preview (Approximate)',
-                style: TextStyle(
-                  fontWeight: FontWeight.bold,
-                  color: Colors.orange.shade700,
-                ),
-              ),
-            ],
+          Text(
+            'Preview Your Deal',
+            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
           ),
-          const SizedBox(height: 8),
-          Text(preview),
+          const SizedBox(height: 24),
+          
+          // Deal Preview Card
+          Card(
+            elevation: 4,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // ✅ NEW: Image carousel section
+                _buildPreviewImageCarousel(),
+                
+                // Content section
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Business name
+                      Text(
+                        business.name,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey.shade600,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      
+                      // Deal title
+                      Text(
+                        previewDeal.title,
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Deal description
+                      Text(
+                        previewDeal.description,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                          height: 1.3,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Price section
+                      Row(
+                        children: [
+                          if (previewDeal.originalPrice != previewDeal.dealPrice) ...[
+                            Text(
+                              '\$${previewDeal.originalPrice.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade500,
+                                decoration: TextDecoration.lineThrough,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                          ],
+                          Text(
+                            '\$${previewDeal.dealPrice.toStringAsFixed(2)}',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.green,
+                            ),
+                          ),
+                          if (previewDeal.discountPercentage > 0) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                '${previewDeal.discountPercentage}% OFF',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 16),
+                      
+                      // Additional details
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Quantity:',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  '${previewDeal.totalQuantity} available',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Expires:',
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                Text(
+                                  _formatDateTime(previewDeal.expirationTime),
+                                  style: TextStyle(
+                                    color: Colors.grey.shade700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: 16),
+          
+          // Info banner
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.blue.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'This is exactly how customers will see your deal',
+                    style: TextStyle(
+                      color: Colors.blue.shade700,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
+      ),
+    );
+    
+  } catch (e) {
+    return const Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Icon(Icons.error_outline, color: Colors.red, size: 48),
+            SizedBox(height: 16),
+            Text('Error generating preview'),
+          ],
+        ),
       ),
     );
   }
 }
 
+// ✅ NEW: Full preview image carousel
+Widget _buildPreviewImageCarousel() {
+  if (_selectedImages.isEmpty) {
+    // Placeholder when no images
+    return AspectRatio(
+      aspectRatio: 2 / 3,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey.shade200,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(12),
+            topRight: Radius.circular(12),
+          ),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.add_a_photo, size: 48, color: Colors.grey.shade400),
+            const SizedBox(height: 8),
+            Text(
+              'Add images to see preview',
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+  
+  return Stack(
+    children: [
+      AspectRatio(
+        aspectRatio: 2 / 3, // ✅ Your chosen ratio
+        child: PageView.builder(
+          itemCount: _selectedImages.length,
+          onPageChanged: (index) {
+            setState(() => _currentFullPreviewImageIndex = index);
+          },
+          itemBuilder: (context, index) {
+            return ClipRRect(
+              borderRadius: const BorderRadius.only(
+                topLeft: Radius.circular(12),
+                topRight: Radius.circular(12),
+              ),
+              child: Image.file(
+                _selectedImages[index],
+                fit: BoxFit.cover,
+              ),
+            );
+          },
+        ),
+      ),
+      
+      // Discount badge (top-left)
+      Positioned(
+        top: 12,
+        left: 12,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.red,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            '${_templateData['discount_percentage']?.round() ?? 20}% OFF',
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+      ),
+      
+      // Image counter (top-right)
+      if (_selectedImages.length > 1)
+        Positioned(
+          top: 12,
+          right: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.black54,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Text(
+              '${_currentFullPreviewImageIndex + 1}/${_selectedImages.length}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+      
+      // Dot indicators (bottom-center)
+      if (_selectedImages.length > 1)
+        Positioned(
+          bottom: 12,
+          left: 0,
+          right: 0,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(
+              _selectedImages.length,
+              (index) => Container(
+                margin: const EdgeInsets.symmetric(horizontal: 3),
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _currentFullPreviewImageIndex == index
+                    ? Colors.white
+                    : Colors.white54,
+                ),
+              ),
+            ),
+          ),
+        ),
+    ],
+  );
+}
+
+
   // Replace the existing _buildDealPreviewCard method with this version
 // This version gets the business from provider instead of parameter
-Widget _buildDealPreviewCard() {
+Widget _buildDealPreviewCardOld() {
   final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
   final business = businessProvider.currentBusiness;
   
@@ -1393,7 +2110,7 @@ Widget _buildDealPreviewCard() {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const Icon(Icons.error_outline, color: Colors.red, size: 48),
             const SizedBox(height: 16),
             Text(
               'Error generating preview',
@@ -1773,7 +2490,7 @@ String _formatDateTime(DateTime dateTime) {
       
       // Create the deal using existing provider
       final dealsProvider = Provider.of<DealsProvider>(context, listen: false);
-      final success = await dealsProvider.createDeal(deal, imageFile: _selectedImage);
+      final success = await dealsProvider.createDeal(deal, imageFiles: _selectedImages,);
       
       if (success && mounted) {
         _showSuccess('Deal created successfully!');

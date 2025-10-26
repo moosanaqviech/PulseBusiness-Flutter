@@ -46,7 +46,85 @@ class DealsProvider extends ChangeNotifier {
     return totalDiscount / dealsWithDiscount.length;
   }
 
-  Future<bool> createDeal(Deal deal, {File? imageFile}) async {
+ Future<bool> createDeal(
+  Deal deal, {
+  File? imageFile,
+  List<File>? imageFiles,
+}) async {
+  try {
+    print('🔧 DealsProvider: Creating deal: ${deal.title}');
+    _setLoading(true);
+    _clearError();
+    
+    List<String> uploadedImageUrls = [];
+    
+    // ✅ Handle multiple images - using your existing _uploadImage method!
+    if (imageFiles != null && imageFiles.isNotEmpty) {
+      print('📸 Uploading ${imageFiles.length} images...');
+      
+      for (int i = 0; i < imageFiles.length; i++) {
+        try {
+          print('⏳ Uploading image ${i + 1}/${imageFiles.length}...');
+          
+          // ✅ Use your existing working upload method!
+          final url = await _uploadImage(imageFiles[i]);
+          uploadedImageUrls.add(url);
+          
+          print('✅ Uploaded image ${i + 1}/${imageFiles.length}: $url');
+          
+        } catch (e) {
+          print('❌ Error uploading image ${i + 1}: $e');
+          // Continue with other images
+        }
+      }
+      
+      if (uploadedImageUrls.isEmpty) {
+        throw Exception('Failed to upload any images');
+      }
+      
+    } 
+    // ✅ Handle single image (backward compatibility)
+    else if (imageFile != null) {
+      print('📸 Uploading single image...');
+      final url = await _uploadImage(imageFile);
+      uploadedImageUrls.add(url);
+      print('✅ Uploaded single image: $url');
+    }
+    
+    // ✅ Create deal with image URLs
+    final dealMap = deal.toMap();
+    
+    if (uploadedImageUrls.isNotEmpty) {
+      dealMap['imageUrls'] = uploadedImageUrls;
+      dealMap['imageUrl'] = uploadedImageUrls.first; // Backward compat
+    }
+    
+    print('🔧 DealsProvider: Adding deal to Firestore...');
+    final docRef = await _firestore.collection('deals').add(dealMap);
+    print('🔧 DealsProvider: Deal created with ID: ${docRef.id}');
+    
+    // ✅ Update local state (like your old method does)
+    final createdDeal = deal.copyWith(
+      id: docRef.id,
+      imageUrl: uploadedImageUrls.isNotEmpty ? uploadedImageUrls.first : null,
+    );
+    _allDeals.insert(0, createdDeal);
+    _applyFilter();
+    
+    print('🔧 DealsProvider: Deal creation successful');
+    return true;
+    
+  } catch (e, stackTrace) {
+    print('❌ DealsProvider: Error creating deal: $e');
+    print('❌ DealsProvider: Stack trace: $stackTrace');
+    _errorMessage = 'Failed to create deal: $e';
+    notifyListeners();
+    return false;
+  } finally {
+    _setLoading(false);
+  }
+}
+  Future<bool> createDealOld(Deal deal, {File? imageFile}) async {
     try {
       print('🔧 DealsProvider: Creating deal: ${deal.title}');
       _setLoading(true);
@@ -81,6 +159,7 @@ class DealsProvider extends ChangeNotifier {
       _setLoading(false);
     }
   }
+  
   Future<void> loadDeals(String businessId) async {
     try {
       _setLoading(true);

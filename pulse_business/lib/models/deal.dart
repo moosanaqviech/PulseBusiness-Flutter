@@ -17,6 +17,7 @@ class Deal {
   final DateTime createdAt;
   final DateTime expirationTime;
   final String? imageUrl;
+  final List<String> imageUrls;
   final bool isActive;
   final int viewCount;
   final int claimCount;
@@ -42,6 +43,7 @@ class Deal {
     DateTime? createdAt,
     required this.expirationTime,
     this.imageUrl,
+    this.imageUrls = const [],
     this.isActive = true,
     this.viewCount = 0,
     this.claimCount = 0,
@@ -53,6 +55,7 @@ class Deal {
   }) : 
     remainingQuantity = remainingQuantity ?? totalQuantity,
     createdAt = createdAt ?? DateTime.now();
+    String? get primaryImageUrl => imageUrls.isNotEmpty ? imageUrls.first : imageUrl;
 
   factory Deal.fromMap(Map<String, dynamic> map, {String? id}) {
     return Deal(
@@ -72,6 +75,7 @@ class Deal {
       createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
       expirationTime: DateTime.fromMillisecondsSinceEpoch(map['expirationTime'] ?? 0),
       imageUrl: map['imageUrl'],
+      imageUrls: map['imageUrls'],
       isActive: map['isActive'] ?? true,
       viewCount: map['viewCount'] ?? 0,
       claimCount: map['claimCount'] ?? 0,
@@ -99,6 +103,7 @@ class Deal {
       'createdAt': Timestamp.fromDate(createdAt), 
       'expirationTime': Timestamp.fromDate(expirationTime), 
       'imageUrl': imageUrl,
+      'imageUrls': imageUrls,
       'isActive': isActive,
       'viewCount': viewCount,
       'claimCount': claimCount,

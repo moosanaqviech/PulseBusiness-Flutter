@@ -1,3 +1,6 @@
+// Fix for Business Side Deal.dart
+// File: pulse_business/lib/models/deal.dart
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Deal {
@@ -23,8 +26,8 @@ class Deal {
   final int claimCount;
   final String status;
   final String? termsAndConditions;
-  final DateTime? startTime;  // null means start immediately
-  final bool isScheduled;   
+  final DateTime? startTime;
+  final bool isScheduled;
 
   Deal({
     this.id,
@@ -51,39 +54,90 @@ class Deal {
     this.termsAndConditions,
     this.startTime,
     this.isScheduled = false,
-    
   }) : 
     remainingQuantity = remainingQuantity ?? totalQuantity,
     createdAt = createdAt ?? DateTime.now();
-    String? get primaryImageUrl => imageUrls.isNotEmpty ? imageUrls.first : imageUrl;
 
+  String? get primaryImageUrl => imageUrls.isNotEmpty ? imageUrls.first : imageUrl;
+
+  // ✅ FIXED: fromMap method
   factory Deal.fromMap(Map<String, dynamic> map, {String? id}) {
-    return Deal(
-      id: id,
-      title: map['title'] ?? '',
-      description: map['description'] ?? '',
-      category: map['category'] ?? '',
-      latitude: (map['latitude'] ?? 0.0).toDouble(),
-      longitude: (map['longitude'] ?? 0.0).toDouble(),
-      originalPrice: (map['originalPrice'] ?? 0.0).toDouble(),
-      dealPrice: (map['dealPrice'] ?? 0.0).toDouble(),
-      totalQuantity: map['totalQuantity'] ?? 0,
-      remainingQuantity: map['remainingQuantity'] ?? 0,
-      businessId: map['businessId'] ?? '',
-      businessName: map['businessName'] ?? '',
-      businessAddress: map['businessAddress'] ?? '',
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
-      expirationTime: DateTime.fromMillisecondsSinceEpoch(map['expirationTime'] ?? 0),
-      imageUrl: map['imageUrl'],
-      imageUrls: map['imageUrls'],
-      isActive: map['isActive'] ?? true,
-      viewCount: map['viewCount'] ?? 0,
-      claimCount: map['claimCount'] ?? 0,
-      status: map['status'] ?? 'active',
-      termsAndConditions: map['termsAndConditions'],
-       startTime: map['startTime'] != null ? DateTime.parse(map['startTime']) : null,
-      isScheduled: map['isScheduled'] ?? false,
-    );
+    try {
+      print('🔍 Business Deal.fromMap - Processing deal: $id');
+      print('🔍 Raw data: $map');
+      
+      return Deal(
+        id: id,
+        title: map['title'] ?? '',
+        description: map['description'] ?? '',
+        category: map['category'] ?? '',
+        latitude: (map['latitude'] ?? 0.0).toDouble(),
+        longitude: (map['longitude'] ?? 0.0).toDouble(),
+        originalPrice: (map['originalPrice'] ?? 0.0).toDouble(),
+        dealPrice: (map['dealPrice'] ?? 0.0).toDouble(),
+        totalQuantity: map['totalQuantity'] ?? 0,
+        remainingQuantity: map['remainingQuantity'] ?? 0,
+        businessId: map['businessId'] ?? '',
+        businessName: map['businessName'] ?? '',
+        businessAddress: map['businessAddress'] ?? '',
+        createdAt: _parseTimestampToDateTime(map['createdAt']),
+        expirationTime: _parseTimestampToDateTime(map['expirationTime']),
+        startTime: map['startTime'] != null 
+            ? _parseTimestampToDateTime(map['startTime'])
+            : null,
+        imageUrl: map['imageUrl'],
+        // ✅ FIX: Handle imageUrls properly
+        imageUrls: map['imageUrls'] != null 
+            ? List<String>.from(map['imageUrls']) 
+            : [],
+        isActive: map['isActive'] ?? true,
+        viewCount: map['viewCount'] ?? 0,
+        claimCount: map['claimCount'] ?? 0,
+        status: map['status'] ?? 'active',
+        termsAndConditions: map['termsAndConditions'],
+        isScheduled: map['isScheduled'] ?? false,
+      );
+    } catch (e, stackTrace) {
+      print('❌ Error in Business Deal.fromMap: $e');
+      print('❌ Stack trace: $stackTrace');
+      print('❌ Data that caused error: $map');
+      rethrow;
+    }
+  }
+
+  // ✅ FIXED: Add fromFirestore method (was missing!)
+  factory Deal.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    print('🔍 Business Deal.fromFirestore - Loading deal: ${doc.id}');
+    return Deal.fromMap(data, id: doc.id);
+  }
+
+  // ✅ FIXED: parseTimestampToDateTime method
+  static DateTime _parseTimestampToDateTime(dynamic value) {
+    try {
+      if (value == null) {
+        return DateTime.now();
+      }
+      
+      if (value is Timestamp) {
+        return value.toDate();  // New format
+      }
+      
+      if (value is int) {
+        return DateTime.fromMillisecondsSinceEpoch(value);  // Old format
+      }
+      
+      if (value is String) {
+        return DateTime.parse(value);
+      }
+      
+      print('⚠️ Unknown timestamp type in business model: ${value.runtimeType}');
+      return DateTime.now();
+      
+    } catch (e) {
+      print('❌ Error parsing timestamp in business model: $e, value: $value');
+      return DateTime.now();
+    }
   }
 
   Map<String, dynamic> toMap() {
@@ -99,9 +153,10 @@ class Deal {
       'remainingQuantity': remainingQuantity,
       'businessId': businessId,
       'businessName': businessName,
-      'businessAddress' : businessAddress,
-      'createdAt': Timestamp.fromDate(createdAt), 
-      'expirationTime': Timestamp.fromDate(expirationTime), 
+      'businessAddress': businessAddress,
+      'createdAt': Timestamp.fromDate(createdAt),
+      'expirationTime': Timestamp.fromDate(expirationTime),
+      'startTime': startTime != null ? Timestamp.fromDate(startTime!) : null,
       'imageUrl': imageUrl,
       'imageUrls': imageUrls,
       'isActive': isActive,
@@ -109,7 +164,6 @@ class Deal {
       'claimCount': claimCount,
       'status': status,
       'termsAndConditions': termsAndConditions,
-      'startTime': startTime?.toIso8601String(),
       'isScheduled': isScheduled,
     };
   }
@@ -148,7 +202,7 @@ class Deal {
     return (claimCount / viewCount) * 100;
   }
 
- bool get shouldStartNow => startTime == null || DateTime.now().isAfter(startTime!);
+  bool get shouldStartNow => startTime == null || DateTime.now().isAfter(startTime!);
 
   Deal copyWith({
     String? id,
@@ -163,14 +217,18 @@ class Deal {
     int? remainingQuantity,
     String? businessId,
     String? businessName,
+    String? businessAddress,
     DateTime? createdAt,
     DateTime? expirationTime,
     String? imageUrl,
+    List<String>? imageUrls,
     bool? isActive,
     int? viewCount,
     int? claimCount,
     String? status,
     String? termsAndConditions,
+    DateTime? startTime,
+    bool? isScheduled,
   }) {
     return Deal(
       id: id ?? this.id,
@@ -189,11 +247,28 @@ class Deal {
       createdAt: createdAt ?? this.createdAt,
       expirationTime: expirationTime ?? this.expirationTime,
       imageUrl: imageUrl ?? this.imageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
       isActive: isActive ?? this.isActive,
       viewCount: viewCount ?? this.viewCount,
       claimCount: claimCount ?? this.claimCount,
       status: status ?? this.status,
       termsAndConditions: termsAndConditions ?? this.termsAndConditions,
+      startTime: startTime ?? this.startTime,
+      isScheduled: isScheduled ?? this.isScheduled,
     );
   }
+
+  @override
+  String toString() {
+    return 'Deal(id: $id, title: $title, businessName: $businessName, dealPrice: $dealPrice)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is Deal && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
 }

@@ -11,6 +11,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../models/business.dart';
 import '../../utils/theme.dart';
+import '../stripe/stripe_onboarding_screen.dart';
 
 class BusinessSetupScreen extends StatefulWidget {
   const BusinessSetupScreen({super.key});
@@ -559,6 +560,13 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
           backgroundColor: Colors.green,
         ),
       );
+      // Navigate to Stripe onboarding (with skip option)
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const StripeOnboardingScreen(canSkip: true),
+      ),
+    );
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

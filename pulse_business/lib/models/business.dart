@@ -17,7 +17,16 @@ class Business {
   final String? businessHours;
   final int totalDeals;
   final int activeDeals;
-  final double averageRating;
+  final double? averageRating;
+  final int? totalRatings;
+
+  //Stripe Connect Express
+  final String? stripeConnectedAccountId;
+  final bool stripeAccountOnboarded;
+  final bool stripePayoutsEnabled;
+  final String? stripeAccountStatus; // 'pending', 'active', 'restricted', 'incomplete'
+  final DateTime? stripeOnboardingCompletedAt;
+  final bool canCreateDeals; // Can create deals even without Stripe setup
 
   Business({
     this.id,
@@ -39,6 +48,14 @@ class Business {
     this.totalDeals = 0,
     this.activeDeals = 0,
     this.averageRating = 0.0,
+    this.totalRatings = 0,
+
+    this.stripeConnectedAccountId,
+    this.stripeAccountOnboarded = false,
+    this.stripePayoutsEnabled = false,
+    this.stripeAccountStatus,
+    this.stripeOnboardingCompletedAt,
+    this.canCreateDeals = true, // Allow deal creation by default
   }) : 
     createdAt = createdAt ?? DateTime.now(),
     updatedAt = updatedAt ?? DateTime.now();
@@ -63,7 +80,19 @@ class Business {
       businessHours: map['businessHours'],
       totalDeals: map['totalDeals'] ?? 0,
       activeDeals: map['activeDeals'] ?? 0,
-      averageRating: (map['averageRating'] ?? 0.0).toDouble(),
+      averageRating: map['averageRating'] != null 
+        ? (map['averageRating'] as num).toDouble() 
+        : null,
+      totalRatings: map['totalRatings'] ?? 0,
+
+      stripeConnectedAccountId: map['stripeConnectedAccountId'],
+      stripeAccountOnboarded: map['stripeAccountOnboarded'] ?? false,
+      stripePayoutsEnabled: map['stripePayoutsEnabled'] ?? false,
+      stripeAccountStatus: map['stripeAccountStatus'],
+      stripeOnboardingCompletedAt: map['stripeOnboardingCompletedAt'] != null
+          ? DateTime.fromMillisecondsSinceEpoch(map['stripeOnboardingCompletedAt'])
+          : null,
+      canCreateDeals: map['canCreateDeals'] ?? true,
     );
   }
 
@@ -87,6 +116,14 @@ class Business {
       'totalDeals': totalDeals,
       'activeDeals': activeDeals,
       'averageRating': averageRating,
+      'totalRatings': totalRatings,
+
+      'stripeConnectedAccountId': stripeConnectedAccountId,
+      'stripeAccountOnboarded': stripeAccountOnboarded,
+      'stripePayoutsEnabled': stripePayoutsEnabled,
+      'stripeAccountStatus': stripeAccountStatus,
+      'stripeOnboardingCompletedAt': stripeOnboardingCompletedAt?.millisecondsSinceEpoch,
+      'canCreateDeals': canCreateDeals,
     };
   }
 
@@ -110,6 +147,14 @@ class Business {
     int? totalDeals,
     int? activeDeals,
     double? averageRating,
+    int? totalRatings,
+
+    String? stripeConnectedAccountId,
+    bool? stripeAccountOnboarded,
+    bool? stripePayoutsEnabled,
+    String? stripeAccountStatus,
+    DateTime? stripeOnboardingCompletedAt,
+    bool? canCreateDeals,
   }) {
     return Business(
       id: id ?? this.id,
@@ -131,6 +176,24 @@ class Business {
       totalDeals: totalDeals ?? this.totalDeals,
       activeDeals: activeDeals ?? this.activeDeals,
       averageRating: averageRating ?? this.averageRating,
+      totalRatings: totalRatings ?? this.totalRatings,
+
+      stripeConnectedAccountId: stripeConnectedAccountId ?? this.stripeConnectedAccountId,
+      stripeAccountOnboarded: stripeAccountOnboarded ?? this.stripeAccountOnboarded,
+      stripePayoutsEnabled: stripePayoutsEnabled ?? this.stripePayoutsEnabled,
+      stripeAccountStatus: stripeAccountStatus ?? this.stripeAccountStatus,
+      stripeOnboardingCompletedAt: stripeOnboardingCompletedAt ?? this.stripeOnboardingCompletedAt,
+      canCreateDeals: canCreateDeals ?? this.canCreateDeals,
     );
+  }
+
+   bool get needsPaymentSetup {
+    return !stripeAccountOnboarded || !stripePayoutsEnabled;
+  }
+
+  bool get hasActiveStripeAccount {
+    return stripeAccountOnboarded && 
+           stripePayoutsEnabled && 
+           stripeAccountStatus == 'active';
   }
 }

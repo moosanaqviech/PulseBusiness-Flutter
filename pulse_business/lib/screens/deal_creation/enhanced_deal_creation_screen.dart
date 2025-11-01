@@ -14,6 +14,7 @@ import '../../providers/deals_provider.dart';
 import '../../services/context_analyzer.dart';
 import '../../services/template_transformation_service.dart';
 import '../../utils/theme.dart';
+import '../stripe/stripe_onboarding_screen.dart';
 
 class EnhancedDealCreationScreen extends StatefulWidget {
   const EnhancedDealCreationScreen({super.key});
@@ -111,6 +112,58 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
       ),
     );
   }
+
+  Widget _buildPaymentSetupBanner(Business business) {
+  if (business.needsPaymentSetup) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.orange.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.orange.shade200),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.info_outline, color: Colors.orange),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Setup Payments to Get Paid',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+                SizedBox(height: 4),
+                Text(
+                  'Complete payment setup to receive payouts',
+                  style: TextStyle(fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const StripeOnboardingScreen(canSkip: false),
+                ),
+              );
+            },
+            child: const Text('Setup'),
+          ),
+        ],
+      ),
+    );
+  }
+  return const SizedBox.shrink();
+}
+
   
   Widget _buildProgressIndicator() {
     return Container(
@@ -1415,14 +1468,14 @@ Widget _buildLivePreview() {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.orange.shade300),
       ),
-      child: Text('Preview unavailable'),
+      child: const Text('Preview unavailable'),
     );
   }
 }
 
 // ✅ NEW: Image carousel for live preview
 Widget _buildImageCarouselPreview() {
-  if (_selectedImages.isEmpty) return SizedBox.shrink();
+  if (_selectedImages.isEmpty) return const SizedBox.shrink();
   
   return Container(
     height: 150,
@@ -1450,14 +1503,14 @@ Widget _buildImageCarouselPreview() {
             top: 8,
             right: 8,
             child: Container(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: Colors.black54,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Text(
                 '${_currentPreviewImageIndex + 1}/${_selectedImages.length}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
@@ -1477,7 +1530,7 @@ Widget _buildImageCarouselPreview() {
               children: List.generate(
                 _selectedImages.length,
                 (index) => Container(
-                  margin: EdgeInsets.symmetric(horizontal: 2),
+                  margin: const EdgeInsets.symmetric(horizontal: 2),
                   width: 6,
                   height: 6,
                   decoration: BoxDecoration(

@@ -56,6 +56,9 @@ dependencies:
   # QR Code Scanner - NEW
   mobile_scanner: ^5.1.1
 
+  app_links: ^6.3.2  # For deep link handling
+  url_launcher: ^6.1.0  # For opening Stripe onboarding in browser
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

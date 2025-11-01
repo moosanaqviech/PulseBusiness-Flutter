@@ -6,12 +6,14 @@ import 'package:pulse_business/screens/deal_creation/enhanced_deal_creation_scre
 import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../providers/deals_provider.dart';
+import '../../utils/deep_link_handler.dart';
 import '../../utils/theme.dart';
 import 'dashboard_tab.dart';
 import 'create_deal_tab.dart';
 //import 'enhanced_create_deal_tab.dart';
 import 'my_deals_tab.dart';
 import '../qr_scanner/qr_scanner_tab.dart';
+import 'settings_tab.dart';
 import 'smart_templates_tab.dart'; // NEW
 
 class MainScreen extends StatefulWidget {
@@ -40,13 +42,14 @@ class _MainScreenState extends State<MainScreen> {
     const EnhancedDealCreationScreen(),    // ENHANCED - templates integration
     const QRScannerScreen(),               // EXISTING - Your scanner tab
     const MyDealsTab(),               // EXISTING
-    //const SettingsScreen(),           // EXISTING
+    const SettingsTab(),           // EXISTING
   ];
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
+     DeepLinkHandler.initialize(context);
     
     // Check if business needs to complete profile
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -82,6 +85,7 @@ class _MainScreenState extends State<MainScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    DeepLinkHandler.dispose();
     super.dispose();
   }
 

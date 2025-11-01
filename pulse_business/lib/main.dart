@@ -8,6 +8,7 @@ import 'models/purchase.dart';
 import 'providers/auth_provider.dart';
 import 'providers/business_provider.dart';
 import 'providers/deals_provider.dart';
+import 'services/stripe_connect_service.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/business_setup/business_setup_screen.dart';
 import 'screens/main/main_screen.dart';
@@ -38,6 +39,7 @@ class PulseBusinessApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => BusinessProvider()),
         ChangeNotifierProvider(create: (_) => DealsProvider()),
         ChangeNotifierProvider(create: (_) => RedemptionService()),
+        ChangeNotifierProvider(create: (_) => StripeConnectService()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {

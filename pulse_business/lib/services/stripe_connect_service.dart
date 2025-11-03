@@ -85,20 +85,34 @@ class StripeConnectService extends ChangeNotifier {
 
   /// Launch Stripe onboarding in browser
   Future<bool> launchOnboarding(String url) async {
-    try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return true;
-      } else {
-        _errorMessage = 'Could not launch onboarding URL';
-        return false;
-      }
-    } catch (e) {
-      _errorMessage = 'Failed to launch onboarding: $e';
+  try {
+    debugPrint('🔵 Launching URL: $url');
+    
+    if (url.isEmpty) {
+      _errorMessage = 'URL is empty';
       return false;
     }
+    
+    final uri = Uri.parse(url);
+    
+    // Try to launch directly first
+    if (await canLaunchUrl(uri)) {
+      final success = await launchUrl(
+        uri, 
+        mode: LaunchMode.externalApplication,
+      );
+      return true;
+    } else {
+      // Fallback: try with platform default
+      await launchUrl(uri, mode: LaunchMode.platformDefault);
+      return true;
+    }
+  } catch (e) {
+    debugPrint('❌ Launch error: $e');
+    _errorMessage = 'Failed to launch onboarding: $e';
+    return false;
   }
+}
 
   /// Check Stripe account status and update Firestore
   Future<Map<String, dynamic>?> checkAccountStatus(String connectedAccountId) async {

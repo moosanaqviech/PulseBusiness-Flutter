@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
+import 'business_provider.dart';
 
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -117,11 +120,7 @@ class AuthProvider extends ChangeNotifier {
       print('❌ AuthProvider: Firebase auth error: ${e.code} - ${e.message}');
       _handleAuthError(e);
       return false;
-    } catch (e) {
-      print('❌ AuthProvider: Unexpected error during sign in: $e');
-      _errorMessage = 'Sign in failed: $e';
-      return false;
-    } finally {
+    }  finally {
       _setLoading(false);
     }
   }
@@ -159,10 +158,6 @@ class AuthProvider extends ChangeNotifier {
       print('❌ AuthProvider: Firebase auth error during creation: ${e.code} - ${e.message}');
       _handleAuthError(e);
       return false;
-    } catch (e) {
-      print('❌ AuthProvider: Unexpected error during account creation: $e');
-      _errorMessage = 'Account creation failed: $e';
-      return false;
     } finally {
       _setLoading(false);
     }
@@ -172,6 +167,9 @@ class AuthProvider extends ChangeNotifier {
     try {
       print('🔧 AuthProvider: Signing out');
       await _auth.signOut();
+      // Clear local storage
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.clear(); 
       _currentUser = null;
       print('🔧 AuthProvider: Sign out successful');
       notifyListeners();

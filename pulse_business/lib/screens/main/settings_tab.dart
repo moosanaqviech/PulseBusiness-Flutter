@@ -353,8 +353,9 @@ class SettingsTab extends StatelessWidget {
               
               try {
                 final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+                businessProvider.clearBusinessData();
                 await authProvider.signOut();
-                
                 if (context.mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

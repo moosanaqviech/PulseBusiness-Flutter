@@ -171,8 +171,10 @@ class BusinessProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void clearBusiness() {
-    _currentBusiness = null;
-    notifyListeners();
-  }
+  void clearBusinessData() {
+  _currentBusiness = null;
+  _isLoading = false;
+  _errorMessage = null;
+  notifyListeners();
+}
 }

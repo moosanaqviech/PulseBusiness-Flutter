@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -11,7 +12,6 @@ import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../models/business.dart';
 import '../../utils/theme.dart';
-import '../stripe/stripe_onboarding_screen.dart';
 
 class BusinessSetupScreen extends StatefulWidget {
   const BusinessSetupScreen({super.key});
@@ -550,6 +550,7 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
       business,
       imageFile: _selectedImage,
     );
+    if (!mounted) return;
 
     if (success && mounted) {
       await authProvider.updateBusinessProfileStatus(true);
@@ -561,12 +562,7 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
         ),
       );
       // Navigate to Stripe onboarding (with skip option)
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const StripeOnboardingScreen(canSkip: true),
-      ),
-    );
+    context.go('/stripe-onboarding', extra: true); // extra: true = canSkip
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

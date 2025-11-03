@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 class Business {
   final String? id;
   final String name;
@@ -58,7 +59,7 @@ class Business {
     this.canCreateDeals = true, // Allow deal creation by default
   }) : 
     createdAt = createdAt ?? DateTime.now(),
-    updatedAt = updatedAt ?? DateTime.now();
+  updatedAt = updatedAt ?? DateTime.now();
 
   factory Business.fromMap(Map<String, dynamic> map, {String? id}) {
     return Business(
@@ -75,8 +76,8 @@ class Business {
       imageUrl: map['imageUrl'],
       ownerId: map['ownerId'] ?? '',
       isVerified: map['isVerified'] ?? false,
-      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] ?? 0),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] ?? 0),
+      createdAt : _parseTimestamp(map['createdAt']),
+      updatedAt : _parseTimestamp(map['updatedAt']),
       businessHours: map['businessHours'],
       totalDeals: map['totalDeals'] ?? 0,
       activeDeals: map['activeDeals'] ?? 0,
@@ -90,7 +91,7 @@ class Business {
       stripePayoutsEnabled: map['stripePayoutsEnabled'] ?? false,
       stripeAccountStatus: map['stripeAccountStatus'],
       stripeOnboardingCompletedAt: map['stripeOnboardingCompletedAt'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['stripeOnboardingCompletedAt'])
+        ? _parseTimestamp(map['stripeOnboardingCompletedAt'])
           : null,
       canCreateDeals: map['canCreateDeals'] ?? true,
     );
@@ -110,8 +111,8 @@ class Business {
       'imageUrl': imageUrl,
       'ownerId': ownerId,
       'isVerified': isVerified,
-      'createdAt': createdAt.millisecondsSinceEpoch,
-      'updatedAt': updatedAt.millisecondsSinceEpoch,
+      'createdAt': Timestamp.fromDate(createdAt), 
+      'updatedAt': Timestamp.fromDate(updatedAt), 
       'businessHours': businessHours,
       'totalDeals': totalDeals,
       'activeDeals': activeDeals,
@@ -122,7 +123,9 @@ class Business {
       'stripeAccountOnboarded': stripeAccountOnboarded,
       'stripePayoutsEnabled': stripePayoutsEnabled,
       'stripeAccountStatus': stripeAccountStatus,
-      'stripeOnboardingCompletedAt': stripeOnboardingCompletedAt?.millisecondsSinceEpoch,
+      'stripeOnboardingCompletedAt': stripeOnboardingCompletedAt != null 
+        ? Timestamp.fromDate(stripeOnboardingCompletedAt!) 
+        : null,
       'canCreateDeals': canCreateDeals,
     };
   }
@@ -196,4 +199,24 @@ class Business {
            stripePayoutsEnabled && 
            stripeAccountStatus == 'active';
   }
+
+  static DateTime _parseTimestamp(dynamic timestamp) {
+  if (timestamp == null) {
+    return DateTime.now();
+  }
+  
+  if (timestamp is Timestamp) {
+    return timestamp.toDate();  // Firestore Timestamp
+  }
+  
+  if (timestamp is int) {
+    return DateTime.fromMillisecondsSinceEpoch(timestamp);  // Old format
+  }
+  
+  if (timestamp is String) {
+    return DateTime.tryParse(timestamp) ?? DateTime.now();
+  }
+  
+  return DateTime.now();
+}
 }

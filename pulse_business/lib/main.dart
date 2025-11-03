@@ -8,6 +8,7 @@ import 'models/purchase.dart';
 import 'providers/auth_provider.dart';
 import 'providers/business_provider.dart';
 import 'providers/deals_provider.dart';
+import 'screens/stripe/stripe_onboarding_screen.dart';
 import 'services/stripe_connect_service.dart';
 import 'screens/auth/auth_screen.dart';
 import 'screens/business_setup/business_setup_screen.dart';
@@ -136,6 +137,14 @@ class PulseBusinessApp extends StatelessWidget {
             return const MainScreen();
           },
         ),
+
+        GoRoute(
+        path: '/stripe-onboarding',
+        builder: (context, state) {
+          final canSkip = state.extra as bool? ?? true;
+          return StripeOnboardingScreen(canSkip: canSkip);
+        },
+      ),
         // ROUTE for redemption success
         GoRoute(
           path: '/redemption-success',

@@ -104,100 +104,95 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(_titles[_currentIndex]),
-        automaticallyImplyLeading: false,
-        backgroundColor: _getAppBarColor(),
-        foregroundColor: _getAppBarTextColor(),
-        elevation: _currentIndex == 0 ? 0 : 1, // No elevation for Smart Templates tab
-        actions: _buildAppBarActions(),
-      ),
-      body: Consumer<BusinessProvider>(
-        builder: (context, businessProvider, child) {
-          if (businessProvider.isLoading) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('Loading your business...'),
-                ],
-              ),
-            );
-          }
+  return Scaffold(
+    appBar: AppBar(
+      title: Text(_titles[_currentIndex]),
+      automaticallyImplyLeading: false,
+      backgroundColor: _getAppBarColor(),
+      foregroundColor: _getAppBarTextColor(),
+      elevation: _currentIndex == 0 ? 0 : 1,
+      actions: _buildAppBarActions(),
+    ),
+    body: Column(
+      children: [
+        // ✅ Add global payment setup banner here
+        Consumer<BusinessProvider>(
+          builder: (context, businessProvider, child) {
+            final business = businessProvider.currentBusiness;
+            if (business?.needsPaymentSetup ?? false) {
+              return _buildGlobalPaymentBanner();
+            }
+            return const SizedBox.shrink();
+          },
+        ),
+        
+        // ✅ Wrap your existing Consumer in Expanded
+        Expanded(
+          child: Consumer<BusinessProvider>(
+            builder: (context, businessProvider, child) {
+              if (businessProvider.isLoading) {
+                return const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(),
+                      SizedBox(height: 16),
+                      Text('Loading your business...'),
+                    ],
+                  ),
+                );
+              }
+              // ... rest of your existing Consumer logic
+              
+              return PageView(
+                controller: _pageController,
+                onPageChanged: _onPageChanged,
+                children: _tabs,
+              );
+            },
+          ),
+        ),
+      ],
+    ),
+    bottomNavigationBar: _buildBottomNavigationBar(),
+    floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+  );
+}
 
-          if (businessProvider.errorMessage != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red.shade300,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Something went wrong',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      color: Colors.grey.shade700,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    businessProvider.errorMessage!,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                  const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-                      businessProvider.loadBusiness(authProvider.currentUser!.uid);
-                    },
-                    icon: const Icon(Icons.refresh),
-                    label: const Text('Try Again'),
-                  ),
-                ],
-              ),
-            );
-          }
-
-          if (businessProvider.currentBusiness == null) {
-            return const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.business_center,
-                    size: 64,
-                    color: Colors.grey,
-                  ),
-                  SizedBox(height: 16),
-                  Text('Business profile not found'),
-                  SizedBox(height: 8),
-                  Text('Please complete your business setup'),
-                ],
-              ),
-            );
-          }
-
-          return PageView(
-            controller: _pageController,
-            onPageChanged: _onPageChanged,
-            children: _tabs,
-          );
-        },
-      ),
-      bottomNavigationBar: _buildBottomNavigationBar(),
-      //floatingActionButton: _buildFloatingActionButton(),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-    );
-  }
-
+// ✅ Add this method to your MainScreen class
+Widget _buildGlobalPaymentBanner() {
+  return Container(
+    width: double.infinity,
+    color: Colors.orange.shade50,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+    child: Row(
+      children: [
+        Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 20),
+        const SizedBox(width: 12),
+        const Expanded(
+          child: Text(
+            'Complete payment setup to start receiving money from deals',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: () {
+            setState(() {
+              _currentIndex = 4; // Settings tab index
+              _pageController.animateToPage(4,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut);
+            });
+          },
+          child: const Text('Setup'),
+        ),
+      ],
+    ),
+  );
+}
   Color _getAppBarColor() {
     switch (_currentIndex) {
       case 0: // Smart Templates
@@ -350,27 +345,6 @@ class _MainScreenState extends State<MainScreen> {
     }
   }
 
- 
-
-  void _showAnalytics() {
-    // TODO: Navigate to analytics screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Detailed analytics coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
-
-  void _showSettings() {
-    // TODO: Navigate to settings screen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Settings feature coming soon'),
-        backgroundColor: Colors.blue,
-      ),
-    );
-  }
 
   void _showScannerHelp() {
     showDialog(
@@ -406,6 +380,8 @@ class _MainScreenState extends State<MainScreen> {
             onPressed: () async {
               Navigator.pop(context);
               final authProvider = Provider.of<AuthProvider>(context, listen: false);
+              final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+              businessProvider.clearBusinessData();
               await authProvider.signOut();
               if (mounted) {
                 Navigator.pushReplacementNamed(context, '/auth');

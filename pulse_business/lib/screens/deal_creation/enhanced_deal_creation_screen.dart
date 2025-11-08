@@ -37,7 +37,8 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
     ComboDealTemplate(),
     FlashSaleTemplate()
   ];
-  
+  List<DealStructureTemplate> _filteredTemplates = [];
+   String? _selectedCategory;
   // State
   DealStructureTemplate? _selectedTemplate;
   TemplateContext? _detectedContext;
@@ -57,6 +58,7 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
   @override
   void initState() {
     super.initState();
+    _filteredTemplates = _availableTemplates;
     _analyzeCurrentContext();
   }
   
@@ -67,6 +69,164 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
     super.dispose();
   }
   
+   void _filterTemplatesByCategory(String? category) {
+    setState(() {
+      _selectedCategory = category;
+      
+      if (category == null || category == 'All') {
+        // Show all templates
+        _filteredTemplates = _availableTemplates;
+      } else {
+        // Simple name-based filtering (works with your current templates!)
+        _filteredTemplates = _availableTemplates.where((template) {
+          final templateName = template.name.toLowerCase();
+          final templateId = template.id.toLowerCase();
+          
+          switch (category) {
+            case 'Time-Based':
+              return templateId.contains('flash') || 
+                     templateName.contains('flash') ||
+                     templateName.contains('time');
+                     
+            case 'Discount':
+              return templateId.contains('percentage') || 
+                     templateName.contains('percentage') ||
+                     templateName.contains('off');
+                     
+            case 'Bundle':
+              return templateId.contains('combo') || 
+                     templateName.contains('bundle') ||
+                     templateName.contains('member');
+                     
+            default:
+              return true;
+          }
+        }).toList();
+      }
+    });
+  }
+
+  // ✅ UPDATE YOUR CATEGORY CHIP METHOD:
+  Widget _buildCategoryChip(String label, String? category) {
+    final isSelected = _selectedCategory == category;
+    
+    return FilterChip(
+      label: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      selected: isSelected,
+      onSelected: (selected) => _filterTemplatesByCategory(selected ? category : null),
+      selectedColor: AppTheme.primaryColor.withOpacity(0.2),
+      checkmarkColor: AppTheme.primaryColor,
+      backgroundColor: Colors.white,
+    );
+  }
+
+  // ✅ UPDATE YOUR TEMPLATE GRID TO USE FILTERED LIST:
+  Widget _buildTemplateSelectionPage() {
+    return Column(
+      children: [
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Browse Templates',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.blue,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ✅ UPDATE CATEGORY FILTERS:
+        SizedBox(
+          height: 50,
+          child: ListView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            children: [
+              _buildCategoryChip('All', null),
+              const SizedBox(width: 8),
+              _buildCategoryChip('🕐 Time-Based', 'Time-Based'),
+              const SizedBox(width: 8),
+              _buildCategoryChip('💰 Discount', 'Discount'),
+              const SizedBox(width: 8),
+              _buildCategoryChip('✨ Bundle', 'Bundle'),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // ✅ UPDATE TEMPLATE GRID:
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final crossAxisCount = constraints.maxWidth < 600 ? 2 : 3;
+              final childAspectRatio = constraints.maxWidth < 600 ? 0.85 : 0.9;
+              
+              // ✅ SHOW MESSAGE WHEN NO TEMPLATES FOUND:
+              if (_filteredTemplates.isEmpty) {
+                return Container(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.search_off,
+                        size: 48,
+                        color: Colors.grey.shade400,
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        'No templates found',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                      if (_selectedCategory != null) ...[
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () => _filterTemplatesByCategory(null),
+                          child: const Text('Show All Templates'),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              }
+              
+              return GridView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  childAspectRatio: childAspectRatio,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: _filteredTemplates.length, // ✅ USE FILTERED LIST
+                itemBuilder: (context, index) {
+                  final template = _filteredTemplates[index]; // ✅ USE FILTERED LIST
+                  return _buildTemplateCard(template, index);
+                },
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
   void _analyzeCurrentContext() {
     final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
     final business = businessProvider.currentBusiness;
@@ -345,101 +505,16 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
     _goToNextPage();
   }
   
-  Widget _buildTemplateSelectionPage() {
-    return Column(
-      children: [
-        // Browse Templates Section
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded( // ✅ FIXED: Added Expanded
-                child: Text(
-                  'Browse Templates',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                  maxLines: 1, // ✅ FIXED: Added maxLines
-                  overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Category Filters
-        SizedBox(
-          height: 50,
-          child: ListView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            children: [
-              _buildCategoryChip('All', true),
-              const SizedBox(width: 8),
-              _buildCategoryChip('🕐 Time-Based', false),
-              const SizedBox(width: 8),
-              _buildCategoryChip('💰 Discount', false),
-              const SizedBox(width: 8),
-              _buildCategoryChip('✨ Loyalty', false),
-            ],
-          ),
-        ),
-
-        const SizedBox(height: 16),
-
-        // Template Grid
-        Expanded(
-          child: LayoutBuilder( // ✅ FIXED: Added LayoutBuilder for responsive design
-            builder: (context, constraints) {
-              final crossAxisCount = constraints.maxWidth < 600 ? 2 : 3;
-              final childAspectRatio = constraints.maxWidth < 600 ? 0.85 : 0.9;
-              
-              return GridView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: crossAxisCount,
-                  childAspectRatio: childAspectRatio,
-                  crossAxisSpacing: 12,
-                  mainAxisSpacing: 12,
-                ),
-                itemCount: _availableTemplates.length,
-                itemBuilder: (context, index) {
-                  final template = _availableTemplates[index];
-                  return _buildTemplateCard(template, index);
-                },
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCategoryChip(String label, bool isSelected) {
-    return FilterChip(
-      label: Text(
-        label,
-        maxLines: 1, // ✅ FIXED: Added maxLines
-        overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
-      ),
-      selected: isSelected,
-      onSelected: (selected) {
-        // Category filter logic would go here
-      },
-      selectedColor: AppTheme.primaryColor.withOpacity(0.2),
-      checkmarkColor: AppTheme.primaryColor,
-    );
-  }
-
   Widget _buildTemplateCard(DealStructureTemplate template, int index) {
     return Card(
-      elevation: 2,
+      elevation: 5,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(15),
+        side: BorderSide(
+                  color: template.primaryColor.withOpacity(.5),
+                  width: 2.0,
+                  style: BorderStyle.solid,
+                ),
       ),
       child: InkWell(
         onTap: () => _selectTemplate(template), // ✅ UPDATED: Now automatically navigates
@@ -454,14 +529,10 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
                   Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppTheme.primaryColor.withOpacity(0.1),
+                      color: template.primaryColor.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: Icon(
-                      index == 0 ? Icons.percent : Icons.local_offer,
-                      color: const Color.fromARGB(255, 230, 81, 7),
-                      size: 24,
-                    ),
+                    child: _buildTemplateIcon(template)
                   ),
                   const Spacer(),
                   Icon(
@@ -493,38 +564,8 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
                   overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
                 ),
               ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade100,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Text(
-                      'Popular',
-                      style: TextStyle(
-                        color: Colors.green.shade700,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1, // ✅ FIXED: Added maxLines
-                      overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
-                    ),
-                  ),
-                  const Spacer(),
-                  Text(
-                    'Tap to use',
-                    style: TextStyle(
-                      color: Colors.grey.shade500,
-                      fontSize: 10,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+              
+            
             ],
           ),
         ),
@@ -929,65 +970,7 @@ Widget _buildTip(String text) {
     ),
   );
 }
-  Widget _buildImageUploadSectionOld() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Deal Image (Optional)',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-          maxLines: 1, // ✅ FIXED: Added maxLines
-          overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
-        ),
-        const SizedBox(height: 8),
-        Text(
-          'Add an eye-catching image to make your deal stand out',
-          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-            color: Colors.grey.shade600,
-          ),
-          maxLines: 2, // ✅ FIXED: Added maxLines
-          overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
-        ),
-        const SizedBox(height: 16),
-        GestureDetector(
-          onTap: _selectImage,
-          child: Container(
-            height: 120,
-            width: double.infinity,
-            decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey.shade300),
-              borderRadius: BorderRadius.circular(8),
-              color: Colors.grey.shade50,
-            ),
-            child: _selectedImage != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.file(
-                      _selectedImage!,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add_a_photo, size: 40, color: Colors.grey.shade400),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Tap to add image',
-                        style: TextStyle(color: Colors.grey.shade600),
-                        maxLines: 1, // ✅ FIXED: Added maxLines
-                        overflow: TextOverflow.ellipsis, // ✅ FIXED: Added overflow handling
-                      ),
-                    ],
-                  ),
-          ),
-        ),
-      ],
-    );
-  }
-
+  
   Widget _buildTimingSection() {
   // ✅ NEW: Check if this is a Flash Sale template
   final isFlashSale = _selectedTemplate?.name.toLowerCase().contains('flash') == true;
@@ -1913,278 +1896,6 @@ Widget _buildPreviewImageCarousel() {
   );
 }
 
-
-  // Replace the existing _buildDealPreviewCard method with this version
-// This version gets the business from provider instead of parameter
-Widget _buildDealPreviewCardOld() {
-  final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
-  final business = businessProvider.currentBusiness;
-  
-  if (business == null) {
-    return const Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Text('Business information not available'),
-      ),
-    );
-  }
-  
-  // ✅ NEW: Generate the ACTUAL deal using transformation service
-  try {
-    Map<String, dynamic> finalTemplateData = Map.from(_templateData);
-    finalTemplateData['user_start_time'] = _startTime;
-    finalTemplateData['user_end_time'] = _endTime;
-    finalTemplateData['start_immediately'] = _startTime == null;
-    
-    final previewDeal = _transformationService.transformToDeal(
-      template: _selectedTemplate!,
-      templateData: finalTemplateData,
-      business: business,
-      customStartTime: _startTime,
-    );
-    
-    // ✅ Show the REAL deal preview
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Preview Your Deal',
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 24),
-          
-          // Deal Preview Card - Matches consumer app layout
-          Card(
-            elevation: 4,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Image section (if available)
-                if (_selectedImage != null)
-                  ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(12),
-                      topRight: Radius.circular(12),
-                    ),
-                    child: AspectRatio(
-                          aspectRatio: 3 / 4,
-                          child: Image.file(
-                            _selectedImage!,
-                        
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                  ),
-                // Content section
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Business name
-                      Text(
-                        business.name,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      
-                      // Deal title
-                      Text(
-                        previewDeal.title,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 8),
-                      
-                      // Deal description
-                      Text(
-                        previewDeal.description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey.shade600,
-                          height: 1.3,
-                        ),
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 16),
-                      
-                      // Price section
-                      Row(
-                        children: [
-                          if (previewDeal.originalPrice != previewDeal.dealPrice) ...[
-                            Text(
-                              '\$${previewDeal.originalPrice.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.grey.shade500,
-                                decoration: TextDecoration.lineThrough,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                          ],
-                          Text(
-                            '\$${previewDeal.dealPrice.toStringAsFixed(2)}',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.green,
-                            ),
-                          ),
-                          if (previewDeal.discountPercentage > 0) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.red,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                '${previewDeal.discountPercentage}% OFF',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                      
-                      const SizedBox(height: 16),
-                      
-                      // Additional details
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Quantity:',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  '${previewDeal.totalQuantity} available',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'Expires:',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade700,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                                Text(
-                                  _formatDateTime(previewDeal.expirationTime),
-                                  style: TextStyle(
-                                    color: Colors.grey.shade700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: 16),
-          
-          // Info banner
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'This is exactly how customers will see your deal',
-                    style: TextStyle(
-                      color: Colors.blue.shade700,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-    
-  } catch (e) {
-    // Fallback error view
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            const Icon(Icons.error_outline, color: Colors.red, size: 48),
-            const SizedBox(height: 16),
-            Text(
-              'Error generating preview',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Colors.red.shade700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              e.toString(),
-              style: TextStyle(color: Colors.grey.shade600),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ✅ Add helper method for date formatting
 String _formatDateTime(DateTime dateTime) {
   final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -2587,4 +2298,11 @@ String _formatDateTime(DateTime dateTime) {
       ),
     );
   }
+
+  Widget _buildTemplateIcon(DealStructureTemplate template) {
+  return Text(
+    template.icon, // Shows: %, 📦, ⚡
+    style: const TextStyle(fontSize: 20),
+  );
+}
 }

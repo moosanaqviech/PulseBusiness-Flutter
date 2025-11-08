@@ -1,9 +1,21 @@
 // lib/models/deal_structure_templates.dart
 // New layer: Deal Structure Templates (user-facing)
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'business.dart';
 import 'deal.dart';
+
+enum TemplateCategory {
+  timeBased,
+  discount,
+  combo,
+  //loyalty,
+  inventory,
+  //seasonal,
+  customer
+}
+
 
 // Base class for deal structure templates
 abstract class DealStructureTemplate {
@@ -16,6 +28,11 @@ abstract class DealStructureTemplate {
   // Form field definitions
   List<TemplateField> get requiredFields;
   List<TemplateField> get optionalFields;
+
+  TemplateCategory get category;
+  
+  //TAGS FOR MORE FLEXIBLE FILTERING
+  List<String> get tags => [];
   
   // Validation
   Map<String, String?> validateFields(Map<String, dynamic> data);
@@ -106,10 +123,13 @@ class PercentageOffTemplate extends DealStructureTemplate {
   String get description => 'Classic discount - save X% off regular price';
   
   @override
-  String get icon => '%';
+  String get icon => '💰';
   
   @override
   Color get primaryColor => Colors.green;
+
+  @override
+  TemplateCategory get category => TemplateCategory.discount;
   
   @override
   List<TemplateField> get requiredFields => [
@@ -330,6 +350,9 @@ class ComboDealTemplate extends DealStructureTemplate {
   
   @override
   Color get primaryColor => Colors.orange;
+
+  @override
+  TemplateCategory get category => TemplateCategory.combo;
   
   @override
   List<TemplateField> get requiredFields => [
@@ -467,8 +490,12 @@ class FlashSaleTemplate extends DealStructureTemplate {
   String get icon => '⚡';
   
   @override
-  Color get primaryColor => Colors.orange;
+  Color get primaryColor => Colors.red;
   
+
+  @override
+  TemplateCategory get category => TemplateCategory.timeBased;
+
   @override
   List<TemplateField> get requiredFields => [
     const TemplateField(

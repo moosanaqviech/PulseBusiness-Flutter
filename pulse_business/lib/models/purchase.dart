@@ -108,13 +108,7 @@ class Purchase {
       final status = data['status'] ?? 'pending';
       print('✅ status: $status (${status.runtimeType})');
 
-      print('🔍 DEBUG: Processing purchaseTime...');
-      final purchaseTime = data['purchaseTime'] ?? 0;
-      print('✅ purchaseTime: $purchaseTime (${purchaseTime.runtimeType})');
-
-      print('🔍 DEBUG: Processing expirationTime...');
-      final expirationTime = data['expirationTime'] ?? 0;
-      print('✅ expirationTime: $expirationTime (${expirationTime.runtimeType})');
+      
 
       print('🔍 DEBUG: Processing qrCode...');
       final qrCode = data['qrCode'];
@@ -147,8 +141,8 @@ class Purchase {
         businessName: businessName,
         amount: amount,
         status: status,
-        purchaseTime: purchaseTime,
-        expirationTime: expirationTime,
+        purchaseTime: _parseUniversalTimestamp(data['purchaseTime']),
+        expirationTime: _parseUniversalTimestamp(data['expirationTime']),
         qrCode: qrCode,
         imageUrl: imageUrl,
         stripePaymentIntentId: stripePaymentIntentId,
@@ -242,6 +236,7 @@ class Purchase {
     );
   }
 
+  
   @override
   String toString() {
     return 'Purchase(id: $id, dealTitle: $dealTitle, status: $status, amount: $amount, isRedeemed: $isRedeemed)';
@@ -255,4 +250,62 @@ class Purchase {
 
   @override
   int get hashCode => id.hashCode;
+
+  static int _parseUniversalTimestamp(dynamic value) {
+  if (value == null) {
+    print('⚠️ Null timestamp, using current time');
+    return DateTime.now().millisecondsSinceEpoch;
+  }
+
+  // Case 1: Already int (milliseconds) - expirationTime format
+  if (value is int) {
+    print('✅ Timestamp is int: $value');
+    return value;
+  }
+
+  // Case 2: Firebase Timestamp - purchaseTime format  
+  if (value is Timestamp) {
+    final millis = value.toDate().millisecondsSinceEpoch;
+    print('✅ Timestamp converted from Timestamp: $millis');
+    return millis;
+  }
+
+  // Case 3: String datetime
+  if (value is String) {
+    try {
+      final datetime = DateTime.parse(value);
+      final millis = datetime.millisecondsSinceEpoch;
+      print('✅ Timestamp parsed from string: $millis');
+      return millis;
+    } catch (e) {
+      print('❌ Failed to parse string timestamp: $value');
+    }
+  }
+
+  // Case 4: DateTime object
+  if (value is DateTime) {
+    final millis = value.millisecondsSinceEpoch;
+    print('✅ Timestamp from DateTime: $millis');
+    return millis;
+  }
+
+  // Case 5: Map (sometimes Firebase returns complex objects)
+  if (value is Map) {
+    print('⚠️ Complex timestamp object: $value');
+    // Try to extract seconds and nanoseconds
+    if (value.containsKey('_seconds')) {
+      final seconds = value['_seconds'] as int? ?? 0;
+      final nanoseconds = value['_nanoseconds'] as int? ?? 0;
+      final millis = (seconds * 1000) + (nanoseconds ~/ 1000000);
+      print('✅ Timestamp from complex object: $millis');
+      return millis;
+    }
+  }
+
+  print('❌ Unknown timestamp type: ${value.runtimeType} - $value');
+  return DateTime.now().millisecondsSinceEpoch;
+}
+
+
+
 }

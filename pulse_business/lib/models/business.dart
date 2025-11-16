@@ -21,6 +21,8 @@ class Business {
   final double? averageRating;
   final int? totalRatings;
 
+  final bool isTaxApplicable;
+
   //Stripe Connect Express
   final String? stripeConnectedAccountId;
   final bool stripeAccountOnboarded;
@@ -57,6 +59,7 @@ class Business {
     this.stripeAccountStatus,
     this.stripeOnboardingCompletedAt,
     this.canCreateDeals = true, // Allow deal creation by default
+    this.isTaxApplicable = true, // Default to including tax (safer assumption)
   }) : 
     createdAt = createdAt ?? DateTime.now(),
   updatedAt = updatedAt ?? DateTime.now();
@@ -94,6 +97,8 @@ class Business {
         ? _parseTimestamp(map['stripeOnboardingCompletedAt'])
           : null,
       canCreateDeals: map['canCreateDeals'] ?? true,
+      // NEW: Default to true if field doesn't exist (backward compatibility)
+      isTaxApplicable: map['isTaxApplicable'] ?? true,
     );
   }
 
@@ -127,6 +132,8 @@ class Business {
         ? Timestamp.fromDate(stripeOnboardingCompletedAt!) 
         : null,
       'canCreateDeals': canCreateDeals,
+      // NEW: Include tax field
+      'isTaxApplicable': isTaxApplicable,
     };
   }
 
@@ -158,6 +165,8 @@ class Business {
     String? stripeAccountStatus,
     DateTime? stripeOnboardingCompletedAt,
     bool? canCreateDeals,
+    // NEW: Include in copyWith
+    bool? isTaxApplicable,
   }) {
     return Business(
       id: id ?? this.id,
@@ -187,6 +196,9 @@ class Business {
       stripeAccountStatus: stripeAccountStatus ?? this.stripeAccountStatus,
       stripeOnboardingCompletedAt: stripeOnboardingCompletedAt ?? this.stripeOnboardingCompletedAt,
       canCreateDeals: canCreateDeals ?? this.canCreateDeals,
+
+       // NEW: Include in copyWith
+      isTaxApplicable: isTaxApplicable ?? this.isTaxApplicable,
     );
   }
 

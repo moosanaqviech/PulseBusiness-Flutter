@@ -28,6 +28,7 @@ class Deal {
   final String? termsAndConditions;
   final DateTime? startTime;
   final bool isScheduled;
+  final bool isTaxApplicable;
 
   Deal({
     this.id,
@@ -54,6 +55,7 @@ class Deal {
     this.termsAndConditions,
     this.startTime,
     this.isScheduled = false,
+    this.isTaxApplicable = true,
   }) : 
     remainingQuantity = remainingQuantity ?? totalQuantity,
     createdAt = createdAt ?? DateTime.now();
@@ -96,6 +98,7 @@ class Deal {
         status: map['status'] ?? 'active',
         termsAndConditions: map['termsAndConditions'],
         isScheduled: map['isScheduled'] ?? false,
+        isTaxApplicable: map['isTaxApplicable'] ?? true, // Safe default for existing deals
       );
     } catch (e, stackTrace) {
       print('❌ Error in Business Deal.fromMap: $e');
@@ -165,6 +168,7 @@ class Deal {
       'status': status,
       'termsAndConditions': termsAndConditions,
       'isScheduled': isScheduled,
+      'isTaxApplicable': isTaxApplicable,
     };
   }
 
@@ -229,6 +233,8 @@ class Deal {
     String? termsAndConditions,
     DateTime? startTime,
     bool? isScheduled,
+    bool? isTaxApplicable,
+
   }) {
     return Deal(
       id: id ?? this.id,
@@ -255,6 +261,7 @@ class Deal {
       termsAndConditions: termsAndConditions ?? this.termsAndConditions,
       startTime: startTime ?? this.startTime,
       isScheduled: isScheduled ?? this.isScheduled,
+      isTaxApplicable: isTaxApplicable ?? this.isTaxApplicable,
     );
   }
 

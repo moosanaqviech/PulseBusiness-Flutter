@@ -30,7 +30,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      /*appBar: AppBar(
         title: const Text('Scan Customer Voucher'),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
@@ -45,7 +45,7 @@ class _QRScannerScreenState extends State<QRScannerScreen> {
             },
           ),
         ],
-      ),
+      ),*/
       body: Stack(
         children: [
           // Camera View

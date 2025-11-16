@@ -5,6 +5,8 @@ import '../../services/stripe_connect_service.dart';
 import '../../providers/business_provider.dart';
 import '../../utils/theme.dart';
 
+import 'package:flutter_svg/flutter_svg.dart';
+
 class StripeOnboardingScreen extends StatefulWidget {
   final bool canSkip; // Allow businesses to skip initially
 
@@ -328,15 +330,12 @@ class _StripeOnboardingScreenState extends State<StripeOnboardingScreen> {
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.network(
-                'https://upload.wikimedia.org/wikipedia/commons/b/ba/Stripe_Logo%2C_revised_2016.svg',
+              SvgPicture.asset(
+                'assets/images/stripe_logo.svg',
                 height: 20,
+                fit: BoxFit.contain,
               ),
-              const SizedBox(width: 8),
-              const Text(
-                'Powered by Stripe',
-                style: TextStyle(color: AppTheme.textSecondary, fontSize: 12),
-              ),
+              
             ],
           ),
           if (widget.canSkip) ...[

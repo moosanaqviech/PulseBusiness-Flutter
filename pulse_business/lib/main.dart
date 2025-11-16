@@ -1,3 +1,5 @@
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart' show FirebaseAuth;
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
@@ -25,6 +27,19 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  try {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await user.reload();
+      debugPrint('✅ Auth working - SHA-1 is correct');
+      print('✅ Auth working - SHA-1 is correct');
+    } else {
+      print('❌ No userX - need to sign in first');
+    }
+  } catch (e) {
+    debugPrint('❌ Auth test failed: $e');
+    debugPrint('💡 This confirms SHA-1 fingerprint mismatch');
+  }
   //await DatabaseHelper.initializeOnAppStart();
   runApp(const PulseBusinessApp());
 }

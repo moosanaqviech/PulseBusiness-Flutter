@@ -165,19 +165,32 @@ class AuthProvider extends ChangeNotifier {
 
   Future<void> signOut() async {
     try {
-      print('🔧 AuthProvider: Signing out');
-      await _auth.signOut();
-      // Clear local storage
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear(); 
-      _currentUser = null;
-      print('🔧 AuthProvider: Sign out successful');
-      notifyListeners();
-    } catch (e) {
-      print('❌ AuthProvider: Error during sign out: $e');
-      _errorMessage = 'Sign out failed: $e';
-      notifyListeners();
-    }
+    print('🔧 AuthProvider: Starting sign out process');
+    _setLoading(true);
+    
+    // Clear Firebase auth
+    await _auth.signOut();
+    print('🔧 AuthProvider: Firebase auth cleared');
+    
+    // Clear all local storage
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+    print('🔧 AuthProvider: Local storage cleared');
+    
+    // Clear user state
+    _currentUser = null;
+    _isInitialized = false; // Reset initialization
+    
+    print('🔧 AuthProvider: Sign out successful');
+    notifyListeners();
+  } catch (e) {
+    print('❌ AuthProvider: Error during sign out: $e');
+    _errorMessage = 'Sign out failed: $e';
+    notifyListeners();
+    rethrow; // Let the calling code handle the error
+  } finally {
+    _setLoading(false);
+  }
   }
 
   Future<void> updateBusinessProfileStatus(bool hasProfile) async {

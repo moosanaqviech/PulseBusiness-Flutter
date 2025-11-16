@@ -102,6 +102,7 @@ class TemplateTransformationService {
       isActive: timing['isActive'],
       isScheduled: timing['isScheduled'],
       createdAt: DateTime.now(),
+      isTaxApplicable: business.isTaxApplicable,
       // Additional metadata for tracking
      
     );
@@ -120,7 +121,7 @@ class TemplateTransformationService {
   final extraDetails = data['combo_description'] ?? '';
   
   // Simple description - no savings calculation needed
-  String description = 'Get $items for just \${comboPrice.toStringAsFixed(2)}';
+  String description = 'Get $items for just \$${comboPrice.toStringAsFixed(2)}';
   if (extraDetails.isNotEmpty) {
     description += '. $extraDetails';
   }
@@ -147,6 +148,7 @@ class TemplateTransformationService {
     isActive: timing['isActive'],
     isScheduled: timing['isScheduled'],
     createdAt: DateTime.now(),
+    isTaxApplicable: business.isTaxApplicable,
   );
 }
 
@@ -451,7 +453,7 @@ DateTime _getDefaultExpirationTime(TemplateContext context, DateTime baseTime) {
       isActive: customStartTime == null,
       isScheduled: customStartTime != null,
       createdAt: DateTime.now(),
-    
+
     );
   }
   
@@ -486,7 +488,7 @@ DateTime _getDefaultExpirationTime(TemplateContext context, DateTime baseTime) {
       isActive: customStartTime == null,
       isScheduled: customStartTime != null,
       createdAt: DateTime.now(),
-     
+      isTaxApplicable: business.isTaxApplicable,
     );
   }
   

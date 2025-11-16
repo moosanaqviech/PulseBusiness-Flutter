@@ -100,15 +100,8 @@ class SettingsTab extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.w500),
         ),
         subtitle: const Text('Active • Daily payouts'),
-        trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => const StripeOnboardingScreen(canSkip: false),
-            ),
-          );
-        },
+        //trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+        onTap:null
       );
     } else {
       // Payment setup incomplete - show prominent banner

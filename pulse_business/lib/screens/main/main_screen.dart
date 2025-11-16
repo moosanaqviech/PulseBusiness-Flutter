@@ -14,7 +14,8 @@ import 'create_deal_tab.dart';
 import 'my_deals_tab.dart';
 import '../qr_scanner/qr_scanner_tab.dart';
 import 'settings_tab.dart';
-import 'smart_templates_tab.dart'; // NEW
+//import 'smart_templates_tab.dart'; // NEW
+import 'analytics_tab.dart';
 
 class MainScreen extends StatefulWidget {
   const MainScreen({super.key});
@@ -29,7 +30,7 @@ class _MainScreenState extends State<MainScreen> {
 
   // Updated tab titles to include Smart Templates and Scanner
   final List<String> _titles = [
-    'Smart Templates',  // NEW - replaces 'Dashboard'
+    'Analytics',  // NEW - replaces 'Dashboard'
     'Create Deal',
     'Scanner',          // EXISTING - QR Scanner
     'My Deals',
@@ -38,7 +39,7 @@ class _MainScreenState extends State<MainScreen> {
 
   // Updated tab widgets
   final List<Widget> _tabs = [
-    const SmartTemplatesTab(),        // NEW - replaces DashboardTab
+    const AnalyticsTab(),        
     const EnhancedDealCreationScreen(),    // ENHANCED - templates integration
     const QRScannerScreen(),               // EXISTING - Your scanner tab
     const MyDealsTab(),               // EXISTING
@@ -80,6 +81,7 @@ class _MainScreenState extends State<MainScreen> {
       dealsProvider.loadDeals(businessProvider.currentBusiness!.id!);
     }
   }
+  
   }
 
   @override
@@ -159,7 +161,6 @@ class _MainScreenState extends State<MainScreen> {
   );
 }
 
-// ✅ Add this method to your MainScreen class
 Widget _buildGlobalPaymentBanner() {
   return Container(
     width: double.infinity,
@@ -195,8 +196,8 @@ Widget _buildGlobalPaymentBanner() {
 }
   Color _getAppBarColor() {
     switch (_currentIndex) {
-      case 0: // Smart Templates
-        return AppTheme.primaryColor;
+      case 0: // Analytics
+        return Colors.indigo;
       case 1: // Create Deal
         return Colors.green;
       case 2: // Scanner
@@ -280,7 +281,7 @@ Widget _buildGlobalPaymentBanner() {
       items: const [
         BottomNavigationBarItem(
           icon: Icon(Icons.auto_awesome),
-          label: 'Templates',
+          label: 'Analytics',
         ),
         BottomNavigationBarItem(
           icon: Icon(Icons.add_circle_outline),

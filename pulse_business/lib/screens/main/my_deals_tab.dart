@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
 import '../../providers/deals_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../models/deal.dart';
@@ -13,6 +14,15 @@ class MyDealsTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          child: ElevatedButton.icon(
+            onPressed: () => _manualRefresh(context),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Refresh Deals'),
+          ),
+        ),
+
         _buildFilterChips(context),
         Expanded(
           child: RefreshIndicator(
@@ -371,4 +381,39 @@ class MyDealsTab extends StatelessWidget {
       );
     }
   }
+
+  Future<void> _manualRefresh(BuildContext context) async {
+    final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
+    final dealsProvider = Provider.of<DealsProvider>(context, listen: false);
+
+    print('🔧 Manual refresh started');
+    
+    // First make sure business is loaded
+    if (businessProvider.currentBusiness == null) {
+      print('🔧 Loading business first...');
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      await businessProvider.loadBusiness(authProvider.currentUser!.uid);
+    }
+
+    // Then load deals
+    if (businessProvider.currentBusiness?.id != null) {
+      print('🔧 Loading deals for business: ${businessProvider.currentBusiness!.id}');
+      await dealsProvider.loadDeals(businessProvider.currentBusiness!.id!);
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Found ${dealsProvider.allDeals.length} deals'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No business profile found'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
 }

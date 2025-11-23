@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/theme.dart';
@@ -29,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
           print('❌ Splash: Timeout reached, forcing initialization complete');
           // Force navigation to auth screen if stuck
           if (mounted) {
-            Navigator.of(context).pushReplacementNamed('/auth');
+            context.go('/auth');
           }
         }
       }

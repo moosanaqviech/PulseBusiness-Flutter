@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:pulse_business/screens/stripe/stripe_success_screen.dart';
 
 import 'firebase_options.dart';
 import 'models/purchase.dart';
@@ -176,6 +177,10 @@ class PulseBusinessApp extends StatelessWidget {
             return RedemptionSuccessScreen(redeemedVoucher: redeemedVoucher);
   },
 ),
+        GoRoute(
+          path: '/stripe-success',
+          builder: (context, state) => const StripeSuccessScreen(),
+        ),
       ],
     );
   }

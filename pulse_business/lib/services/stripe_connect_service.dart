@@ -65,8 +65,10 @@ class StripeConnectService extends ChangeNotifier {
       final response = await callable.call({
         'connectedAccountId': connectedAccountId,
         // Deep links to return to app
-        'refreshUrl': 'pulse://business/stripe-refresh',
-        'returnUrl': 'pulse://business/stripe-complete',
+        //'refreshUrl': 'pulse://business/stripe-refresh',
+        //'returnUrl': 'pulse://business/stripe-complete',
+        'refreshUrl': 'https://checkpulse.shop/stripe-refresh',
+        'returnUrl': 'https://checkpulse.shop/stripe-complete',
       });
 
       if (response.data['success'] == true) {

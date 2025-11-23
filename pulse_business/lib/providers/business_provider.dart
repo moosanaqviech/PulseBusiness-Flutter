@@ -111,16 +111,51 @@ class BusinessProvider extends ChangeNotifier {
     }
   }
 
-  Future<String> _uploadImage(File imageFile, String ownerId) async {
-    try {
-      final ref = _storage.ref().child('businesses/$ownerId.jpg');
-      final uploadTask = await ref.putFile(imageFile);
-      return await uploadTask.ref.getDownloadURL();
-    } catch (e) {
-      throw Exception('Failed to upload image: $e');
-    }
-  }
+ // Just update this method in your BusinessProvider class
 
+Future<String> _uploadImage(File imageFile, String ownerId) async {
+  try {
+    print('🔧 BusinessProvider: Starting image upload for owner: $ownerId');
+    
+    // Check if file exists
+    if (!await imageFile.exists()) {
+      throw Exception('Image file does not exist');
+    }
+    
+    // Generate unique filename with timestamp
+    final fileName = 'business_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    
+    // Use the path that matches your storage rules: /business_images/{userId}/{filename}
+    final ref = _storage
+        .ref()
+        .child('business_images')
+        .child(ownerId)
+        .child(fileName);
+    
+    print('🔧 BusinessProvider: Uploading to path: business_images/$ownerId/$fileName');
+    
+    // Set metadata for better file management
+    final metadata = SettableMetadata(
+      contentType: 'image/jpeg',
+      customMetadata: {
+        'uploaded_by': 'pulse_business',
+        'upload_time': DateTime.now().toIso8601String(),
+        'user_id': ownerId,
+      },
+    );
+    
+    // Upload the file
+    final uploadTask = await ref.putFile(imageFile, metadata);
+    final downloadUrl = await uploadTask.ref.getDownloadURL();
+    
+    print('🔧 BusinessProvider: Upload successful: $downloadUrl');
+    return downloadUrl;
+    
+  } catch (e) {
+    print('❌ BusinessProvider: Upload failed: $e');
+    throw Exception('Failed to upload business image: $e');
+  }
+}
   Future<void> updateBusinessStats(int dealCountChange) async {
     if (_currentBusiness == null) {
       print('❌ BusinessProvider: Cannot update stats - no business loaded');

@@ -27,7 +27,11 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
   // Form controllers
   final _businessNameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _addressController = TextEditingController();
+  final _streetNumberController = TextEditingController();
+  final _streetNameController = TextEditingController();
+  final _cityController = TextEditingController();
+  final _zipCodeController = TextEditingController();
+  final _countryController = TextEditingController(text: 'Canada');
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _websiteController = TextEditingController();
@@ -38,6 +42,7 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
   LatLng _selectedLocation = const LatLng(43.6532, -79.3832); // Toronto default
   GoogleMapController? _mapController;
   int _currentPage = 0;
+  bool _isGeocodingAddress = false;
 
   final List<String> _categories = [
     'Restaurant', 'Cafe', 'Shop', 'Activity', 'Salon', 
@@ -55,13 +60,29 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
   void dispose() {
     _businessNameController.dispose();
     _descriptionController.dispose();
-    _addressController.dispose();
+    _streetNumberController.dispose();
+    _streetNameController.dispose();
+    _cityController.dispose();
+    _zipCodeController.dispose();
+    _countryController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _websiteController.dispose();
     _businessHoursController.dispose();
     _pageController.dispose();
     super.dispose();
+  }
+
+  String _getFullAddress() {
+    final parts = [
+      _streetNumberController.text.trim(),
+      _streetNameController.text.trim(),
+      _cityController.text.trim(),
+      _zipCodeController.text.trim(),
+      _countryController.text.trim(),
+    ].where((part) => part.isNotEmpty);
+    
+    return parts.join(', ');
   }
 
   @override
@@ -261,66 +282,179 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
   Widget _buildLocationPage() {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      'Location',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: _useCurrentLocation,
-                    icon: const Icon(Icons.my_location),
-                    label: const Text('Use Current'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Tap on the map to select your exact location',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppTheme.textSecondary,
-                ),
-              ),
-              const SizedBox(height: 16),
-              
-              TextFormField(
-                controller: _addressController,
-                decoration: const InputDecoration(
-                  labelText: 'Address *',
-                  prefixIcon: Icon(Icons.location_on),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Address is required';
-                  }
-                  return null;
-                },
-              ),
-            ],
-          ),
-        ),
         Expanded(
-          child: GoogleMap(
-            initialCameraPosition: CameraPosition(
-              target: _selectedLocation,
-              zoom: 12,
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Location',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: _useCurrentLocation,
+                      icon: const Icon(Icons.my_location),
+                      label: const Text('Use Current'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Enter your business address',
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                
+                Row(
+                  children: [
+                    Expanded(
+                      flex: 1,
+                      child: TextFormField(
+                        controller: _streetNumberController,
+                        keyboardType: TextInputType.number,
+                        decoration: const InputDecoration(
+                          labelText: 'Number *',
+                          prefixIcon: Icon(Icons.tag),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      flex: 2,
+                      child: TextFormField(
+                        controller: _streetNameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Street Name *',
+                          prefixIcon: Icon(Icons.location_on),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                TextFormField(
+                  controller: _cityController,
+                  decoration: const InputDecoration(
+                    labelText: 'City *',
+                    prefixIcon: Icon(Icons.location_city),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'City is required';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextFormField(
+                        controller: _zipCodeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Postal/Zip Code *',
+                          prefixIcon: Icon(Icons.mail),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: TextFormField(
+                        controller: _countryController,
+                        decoration: const InputDecoration(
+                          labelText: 'Country *',
+                          prefixIcon: Icon(Icons.flag),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return 'Required';
+                          }
+                          return null;
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: _isGeocodingAddress ? null : _geocodeAddress,
+                    icon: _isGeocodingAddress
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.pin_drop),
+                    label: Text(_isGeocodingAddress ? 'Finding location...' : 'Pin Location on Map'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                
+                Container(
+                  height: 300,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppTheme.borderColor),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: GoogleMap(
+                    initialCameraPosition: CameraPosition(
+                      target: _selectedLocation,
+                      zoom: 12,
+                    ),
+                    onMapCreated: (controller) => _mapController = controller,
+                    onTap: _onMapTap,
+                    markers: {
+                      Marker(
+                        markerId: const MarkerId('business_location'),
+                        position: _selectedLocation,
+                        infoWindow: const InfoWindow(title: 'Business Location'),
+                      ),
+                    },
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Tap on the map to adjust the pin location',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
             ),
-            onMapCreated: (controller) => _mapController = controller,
-            onTap: _onMapTap,
-            markers: {
-              Marker(
-                markerId: const MarkerId('business_location'),
-                position: _selectedLocation,
-                infoWindow: const InfoWindow(title: 'Business Location'),
-              ),
-            },
           ),
         ),
       ],
@@ -332,45 +466,129 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Business Photo',
+          'Business Logo *',
           style: Theme.of(context).textTheme.titleMedium,
         ),
-        const SizedBox(height: 12),
-        GestureDetector(
-          onTap: _pickImage,
-          child: Container(
-            width: double.infinity,
-            height: 200,
-            decoration: BoxDecoration(
-              color: AppTheme.placeholderBg,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: AppTheme.borderColor),
-            ),
-            child: _selectedImage != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.file(
-                      _selectedImage!,
-                      fit: BoxFit.cover,
-                    ),
-                  )
-                : const Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.add_a_photo,
-                        size: 48,
-                        color: AppTheme.textHint,
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Tap to select image',
-                        style: TextStyle(color: AppTheme.textHint),
-                      ),
-                    ],
-                  ),
+        const SizedBox(height: 4),
+        Text(
+          'Square format recommended (min. 200x200px)',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            color: AppTheme.textSecondary,
           ),
         ),
+        const SizedBox(height: 12),
+        
+        if (_selectedImage != null) ...[
+          // Preview section when image is selected
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Circular preview (map marker)
+              Expanded(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppTheme.borderColor, width: 2),
+                        image: DecorationImage(
+                          image: FileImage(_selectedImage!),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Map Marker',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Rectangular preview (deal card)
+              Expanded(
+                child: Column(
+                  children: [
+                    Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppTheme.borderColor, width: 2),
+                        image: DecorationImage(
+                          image: FileImage(_selectedImage!),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Deal Card',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _pickImage,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Change Logo'),
+            ),
+          ),
+        ] else ...[
+          // Upload placeholder when no image selected
+          GestureDetector(
+            onTap: _pickImage,
+            child: Container(
+              width: double.infinity,
+              height: 200,
+              decoration: BoxDecoration(
+                color: AppTheme.placeholderBg,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: AppTheme.borderColor),
+              ),
+              child: const Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.add_photo_alternate,
+                    size: 48,
+                    color: AppTheme.textHint,
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Tap to upload logo',
+                    style: TextStyle(
+                      color: AppTheme.textHint,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    'Square format works best',
+                    style: TextStyle(
+                      color: AppTheme.textHint,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -414,12 +632,139 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    final pickedFile = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85, // Compress slightly for better performance
+    );
     
     if (pickedFile != null) {
-      setState(() {
-        _selectedImage = File(pickedFile.path);
-      });
+      final file = File(pickedFile.path);
+      
+      // Validate image dimensions
+      final isValid = await _validateImageDimensions(file);
+      
+      if (isValid) {
+        setState(() {
+          _selectedImage = file;
+        });
+      }
+    }
+  }
+
+  Future<bool> _validateImageDimensions(File imageFile) async {
+    try {
+      // Decode image to get dimensions
+      final bytes = await imageFile.readAsBytes();
+      final image = await decodeImageFromList(bytes);
+      
+      final width = image.width;
+      final height = image.height;
+      
+      // Check minimum dimensions
+      if (width < 200 || height < 200) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Logo must be at least 200x200px\nYour image: ${width}x${height}px',
+              ),
+              backgroundColor: Colors.red,
+              duration: const Duration(seconds: 4),
+            ),
+          );
+        }
+        return false;
+      }
+      
+      // Warn if not square (but don't reject)
+      if ((width - height).abs() > width * 0.1) { // More than 10% difference
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Tip: Square logos (${width}x${width}px) look best on maps and deal cards',
+              ),
+              backgroundColor: Colors.orange,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+      
+      return true;
+      
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error validating image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      return false;
+    }
+  }
+
+  Future<void> _geocodeAddress() async {
+    if (!_validateAddressFields()) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please fill in all address fields first'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isGeocodingAddress = true);
+
+    try {
+      final fullAddress = _getFullAddress();
+      final locations = await locationFromAddress(fullAddress);
+      
+      if (locations.isNotEmpty) {
+        final location = locations.first;
+        final newLocation = LatLng(location.latitude, location.longitude);
+        
+        setState(() {
+          _selectedLocation = newLocation;
+          _isGeocodingAddress = false;
+        });
+        
+        _mapController?.animateCamera(
+          CameraUpdate.newLatLngZoom(newLocation, 17),
+        );
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Location pinned on map! Adjust if needed.'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } else {
+        setState(() => _isGeocodingAddress = false);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Could not find this address. Please check and try again.'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      setState(() => _isGeocodingAddress = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error finding address: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -487,8 +832,14 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
       
       if (placemarks.isNotEmpty) {
         final placemark = placemarks.first;
-        final address = '${placemark.street}, ${placemark.locality}, ${placemark.administrativeArea}';
-        _addressController.text = address;
+        
+        setState(() {
+          _streetNumberController.text = placemark.subThoroughfare ?? '';
+          _streetNameController.text = placemark.thoroughfare ?? '';
+          _cityController.text = placemark.locality ?? '';
+          _zipCodeController.text = placemark.postalCode ?? '';
+          _countryController.text = placemark.country ?? 'Canada';
+        });
       }
     } catch (e) {
       // Handle geocoding error silently
@@ -522,8 +873,16 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
     } else if (_currentPage == 1) {
       return _phoneController.text.isNotEmpty;
     } else {
-      return _addressController.text.isNotEmpty;
+      return _validateAddressFields();
     }
+  }
+
+  bool _validateAddressFields() {
+    return _streetNumberController.text.isNotEmpty &&
+           _streetNameController.text.isNotEmpty &&
+           _cityController.text.isNotEmpty &&
+           _zipCodeController.text.isNotEmpty &&
+           _countryController.text.isNotEmpty;
   }
 
   Future<void> _finishSetup() async {
@@ -536,7 +895,7 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
       name: _businessNameController.text.trim(),
       description: _descriptionController.text.trim(),
       category: _selectedCategory.toLowerCase(),
-      address: _addressController.text.trim(),
+      address: _getFullAddress(),
       latitude: _selectedLocation.latitude,
       longitude: _selectedLocation.longitude,
       phoneNumber: _phoneController.text.trim(),
@@ -561,8 +920,7 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
           backgroundColor: Colors.green,
         ),
       );
-      // Navigate to Stripe onboarding (with skip option)
-    context.go('/stripe-onboarding', extra: true); // extra: true = canSkip
+      context.go('/stripe-onboarding', extra: true);
     } else if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

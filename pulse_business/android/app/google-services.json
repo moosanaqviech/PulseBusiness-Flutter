@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "930910441824-jn6j7k3trh1hlrmjgr24fos4stvu35nq.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pulse.business",
+            "certificate_hash": "a425b33266c64dcce4582002b2a6682ee1ee60be"
+          }
+        },
+        {
           "client_id": "930910441824-br3m1eetvjshravis6i9u4sdf7m8sfp1.apps.googleusercontent.com",
           "client_type": 3
         }

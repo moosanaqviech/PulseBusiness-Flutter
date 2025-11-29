@@ -891,16 +891,16 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
     
     final views = <Map<String, dynamic>>[];
     final claims = <Map<String, dynamic>>[];
-    
-    // Generate time slots
-    final timeSlots = _generateTimeSlots(period);
-    
-    // Initialize all slots with 0
-    for (final slot in timeSlots) {
+  
+  // Generate time slots
+  final timeSlots = _generateTimeSlots(period);
+  
+  // Initialize all slots with 0
+  for (final slot in timeSlots) {
       views.add({'label': slot['label']!, 'count': 0});
       claims.add({'label': slot['label']!, 'count': 0});
-    }
-    
+  }
+  
     // Only show actual totals in the most recent time slot if there's data
     final totalViews = deals.fold(0, (sum, deal) => sum + deal.viewCount);
     final totalClaims = deals.fold(0, (sum, deal) => sum + deal.claimCount);
@@ -911,43 +911,43 @@ class _AnalyticsTabState extends State<AnalyticsTab> {
       if (lastIndex >= 0) {
         views[lastIndex]['count'] = totalViews;
         claims[lastIndex]['count'] = totalClaims;
-      }
     }
-    
-    return {'views': views, 'claims': claims};
   }
+  
+    return {'views': views, 'claims': claims};
+}
 
   List<Map<String, String>> _generateTimeSlots(String period) {
-    final now = DateTime.now();
+  final now = DateTime.now();
     final List<Map<String, String>> slots = [];
-    
-    switch (period) {
-      case 'Today':
-        for (int i = 5; i >= 0; i--) {
+  
+  switch (period) {
+    case 'Today':
+      for (int i = 5; i >= 0; i--) {
           final time = now.subtract(Duration(hours: i * 4));
           final label = '${time.hour.toString().padLeft(2, '0')}:00';
           slots.add({'label': label});
-        }
-        break;
-        
-      case 'This Week':
-        for (int i = 6; i >= 0; i--) {
+      }
+      break;
+      
+    case 'This Week':
+      for (int i = 6; i >= 0; i--) {
           final date = now.subtract(Duration(days: i));
           final label = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'][date.weekday - 1];
           slots.add({'label': label});
-        }
-        break;
-        
-      case 'This Month':
+      }
+      break;
+      
+    case 'This Month':
         for (int i = 3; i >= 0; i--) {
           final label = 'Week ${4 - i}';
           slots.add({'label': label});
-        }
-        break;
-    }
-    
-    return slots;
+      }
+      break;
   }
+  
+  return slots;
+}
 
   Map<String, double> _calculateCategoryRevenue(List<Deal> deals) {
     final Map<String, double> categoryRevenue = {};

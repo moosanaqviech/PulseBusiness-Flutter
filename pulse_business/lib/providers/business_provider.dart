@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -11,11 +13,15 @@ class BusinessProvider extends ChangeNotifier {
   Business? _currentBusiness;
   bool _isLoading = false;
   String? _errorMessage;
+  
+  // Add this: Track Firestore listener
+  StreamSubscription<DocumentSnapshot>? _businessSubscription;
 
   Business? get currentBusiness => _currentBusiness;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
 
+  // Your existing createBusiness method stays the same...
   Future<bool> createBusiness(Business business, {File? imageFile}) async {
     try {
       print('🔧 BusinessProvider: Creating business for owner: ${business.ownerId}');
@@ -28,7 +34,7 @@ class BusinessProvider extends ChangeNotifier {
       }
 
       final businessWithImage = business.copyWith(
-        id: business.ownerId, // Set the ID immediately
+        id: business.ownerId,
         imageUrl: imageUrl,
       );
       
@@ -51,6 +57,7 @@ class BusinessProvider extends ChangeNotifier {
     }
   }
 
+  // Your existing updateBusiness method stays the same...
   Future<bool> updateBusiness(Business business, {File? imageFile}) async {
     try {
       print('🔧 BusinessProvider: Updating business: ${business.id}');
@@ -86,11 +93,15 @@ class BusinessProvider extends ChangeNotifier {
     }
   }
 
+  // UPDATED: Load business with proper listener tracking
   Future<void> loadBusiness(String ownerId) async {
     try {
       print('🔧 BusinessProvider: Loading business for owner: $ownerId');
       _setLoading(true);
       _clearError();
+
+      // Cancel any existing subscription first
+      await _businessSubscription?.cancel();
 
       final doc = await _firestore.collection('businesses').doc(ownerId).get();
       
@@ -111,51 +122,46 @@ class BusinessProvider extends ChangeNotifier {
     }
   }
 
- // Just update this method in your BusinessProvider class
-
-Future<String> _uploadImage(File imageFile, String ownerId) async {
-  try {
-    print('🔧 BusinessProvider: Starting image upload for owner: $ownerId');
-    
-    // Check if file exists
-    if (!await imageFile.exists()) {
-      throw Exception('Image file does not exist');
+  // Your existing _uploadImage method stays the same...
+  Future<String> _uploadImage(File imageFile, String ownerId) async {
+    try {
+      print('🔧 BusinessProvider: Starting image upload for owner: $ownerId');
+      
+      if (!await imageFile.exists()) {
+        throw Exception('Image file does not exist');
+      }
+      
+      final fileName = 'business_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final ref = _storage
+          .ref()
+          .child('business_images')
+          .child(ownerId)
+          .child(fileName);
+      
+      print('🔧 BusinessProvider: Uploading to path: business_images/$ownerId/$fileName');
+      
+      final metadata = SettableMetadata(
+        contentType: 'image/jpeg',
+        customMetadata: {
+          'uploaded_by': 'pulse_business',
+          'upload_time': DateTime.now().toIso8601String(),
+          'user_id': ownerId,
+        },
+      );
+      
+      final uploadTask = await ref.putFile(imageFile, metadata);
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+      
+      print('🔧 BusinessProvider: Upload successful: $downloadUrl');
+      return downloadUrl;
+      
+    } catch (e) {
+      print('❌ BusinessProvider: Upload failed: $e');
+      throw Exception('Failed to upload business image: $e');
     }
-    
-    // Generate unique filename with timestamp
-    final fileName = 'business_${DateTime.now().millisecondsSinceEpoch}.jpg';
-    
-    // Use the path that matches your storage rules: /business_images/{userId}/{filename}
-    final ref = _storage
-        .ref()
-        .child('business_images')
-        .child(ownerId)
-        .child(fileName);
-    
-    print('🔧 BusinessProvider: Uploading to path: business_images/$ownerId/$fileName');
-    
-    // Set metadata for better file management
-    final metadata = SettableMetadata(
-      contentType: 'image/jpeg',
-      customMetadata: {
-        'uploaded_by': 'pulse_business',
-        'upload_time': DateTime.now().toIso8601String(),
-        'user_id': ownerId,
-      },
-    );
-    
-    // Upload the file
-    final uploadTask = await ref.putFile(imageFile, metadata);
-    final downloadUrl = await uploadTask.ref.getDownloadURL();
-    
-    print('🔧 BusinessProvider: Upload successful: $downloadUrl');
-    return downloadUrl;
-    
-  } catch (e) {
-    print('❌ BusinessProvider: Upload failed: $e');
-    throw Exception('Failed to upload business image: $e');
   }
-}
+
+  // Your existing updateBusinessStats method stays the same...
   Future<void> updateBusinessStats(int dealCountChange) async {
     if (_currentBusiness == null) {
       print('❌ BusinessProvider: Cannot update stats - no business loaded');
@@ -192,6 +198,23 @@ Future<String> _uploadImage(File imageFile, String ownerId) async {
     }
   }
 
+  // NEW: Clear all business data and stop listeners
+  void clearBusinessData() {
+    print('🔧 BusinessProvider: Clearing business data and stopping listeners');
+    
+    // Cancel any active Firestore subscriptions
+    _businessSubscription?.cancel();
+    _businessSubscription = null;
+    
+    // Clear business data
+    _currentBusiness = null;
+    _isLoading = false;
+    _errorMessage = null;
+    
+    print('🔧 BusinessProvider: Business data cleared');
+    notifyListeners();
+  }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();
@@ -206,10 +229,10 @@ Future<String> _uploadImage(File imageFile, String ownerId) async {
     notifyListeners();
   }
 
-  void clearBusinessData() {
-  _currentBusiness = null;
-  _isLoading = false;
-  _errorMessage = null;
-  notifyListeners();
-}
+  @override
+  void dispose() {
+    print('🔧 BusinessProvider: Disposing and cleaning up');
+    _businessSubscription?.cancel();
+    super.dispose();
+  }
 }

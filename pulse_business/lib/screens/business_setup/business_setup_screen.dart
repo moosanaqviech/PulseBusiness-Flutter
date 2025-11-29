@@ -13,6 +13,10 @@ import '../../providers/business_provider.dart';
 import '../../models/business.dart';
 import '../../utils/theme.dart';
 
+import '../legal/terms_of_service_screen.dart';
+import '../legal/privacy_policy_screen.dart';
+
+
 class BusinessSetupScreen extends StatefulWidget {
   const BusinessSetupScreen({super.key});
 
@@ -43,6 +47,9 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
   GoogleMapController? _mapController;
   int _currentPage = 0;
   bool _isGeocodingAddress = false;
+  bool _acceptedTerms = false;
+  bool _acceptedProhibitedItems = false;
+  bool _isCreatingBusiness = false;
 
   final List<String> _categories = [
     'Restaurant', 'Cafe', 'Shop', 'Activity', 'Salon', 
@@ -103,6 +110,8 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
                 _buildBasicInfoPage(),
                 _buildContactPage(),
                 _buildLocationPage(),
+                _buildTermsPage(),
+                
               ],
             ),
           ),
@@ -117,11 +126,11 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
       padding: const EdgeInsets.all(16),
       child: Row(
         children: [
-          for (int i = 0; i < 3; i++)
+          for (int i = 0; i < 4; i++)
             Expanded(
               child: Container(
                 height: 4,
-                margin: EdgeInsets.only(right: i < 2 ? 8 : 0),
+                margin: EdgeInsets.only(right: i < 3 ? 8 : 0),
                 decoration: BoxDecoration(
                   color: i <= _currentPage ? AppTheme.primaryColor : Colors.grey[300],
                   borderRadius: BorderRadius.circular(2),
@@ -461,6 +470,290 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
     );
   }
 
+  
+Widget _buildTermsPage() {
+  return SingleChildScrollView(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Terms & Conditions',
+          style: Theme.of(context).textTheme.headlineSmall,
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Please review and accept the following to continue:',
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: AppTheme.textSecondary,
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Prohibited Items Checkbox
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: _acceptedProhibitedItems ? Colors.green : Colors.red.shade300,
+              width: 2,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            color: _acceptedProhibitedItems ? Colors.green.shade50 : Colors.red.shade50,
+          ),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: _acceptedProhibitedItems,
+                    onChanged: (value) {
+                      setState(() {
+                        _acceptedProhibitedItems = value ?? false;
+                      });
+                    },
+                    activeColor: Colors.green,
+                  ),
+                  Expanded(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() {
+                          _acceptedProhibitedItems = !_acceptedProhibitedItems;
+                        });
+                      },
+                      child: Padding(
+                        padding: const EdgeInsets.only(top: 12),
+                        child: RichText(
+                          text: TextSpan(
+                            style: const TextStyle(
+                              fontSize: 14,
+                              color: Colors.black87,
+                              height: 1.4,
+                            ),
+                            children: [
+                              const TextSpan(text: 'I confirm that I will '),
+                              TextSpan(
+                                text: 'NOT',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.red.shade700,
+                                ),
+                              ),
+                              const TextSpan(text: ' offer deals for:\n\n'),
+                              TextSpan(
+                                text: '• Alcoholic beverages, drinks, or bar specials\n',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.red.shade700,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '• Gambling, betting, or lottery services\n',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.red.shade700,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '• Cannabis or cannabis-related products\n',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.red.shade700,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '• Tobacco or vaping products\n\n',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  color: Colors.red.shade700,
+                                ),
+                              ),
+                              TextSpan(
+                                text: '(Note: Restaurants/bars are welcome to offer food deals, but alcohol cannot be part of the promotion)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                  color: Colors.grey.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (!_acceptedProhibitedItems)
+                Padding(
+                  padding: const EdgeInsets.only(left: 48, top: 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '⚠️ You must confirm this to continue',
+                      style: TextStyle(
+                        color: Colors.red.shade700,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // General Terms Checkbox
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: _acceptedTerms ? Colors.green : Colors.grey.shade300,
+              width: 2,
+            ),
+            borderRadius: BorderRadius.circular(8),
+            color: _acceptedTerms ? Colors.green.shade50 : Colors.grey.shade50,
+          ),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Checkbox(
+                    value: _acceptedTerms,
+                    onChanged: (value) {
+                      setState(() {
+                        _acceptedTerms = value ?? false;
+                      });
+                    },
+                    activeColor: Colors.green,
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Wrap(
+                            children: [
+                              const Text(
+                                'I agree to the ',
+                                style: TextStyle(fontSize: 14, color: Colors.black87),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const TermsOfServiceScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'Terms of Service',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppTheme.primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                              const Text(
+                                ' and ',
+                                style: TextStyle(fontSize: 14, color: Colors.black87),
+                              ),
+                              GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => const PrivacyPolicyScreen(),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  'Privacy Policy',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppTheme.primaryColor,
+                                    fontWeight: FontWeight.w600,
+                                    decoration: TextDecoration.underline,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Tap to read the full documents',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (!_acceptedTerms)
+                Padding(
+                  padding: const EdgeInsets.only(left: 48, top: 4),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '⚠️ You must accept the terms to continue',
+                      style: TextStyle(
+                        color: Colors.orange.shade700,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // Info Box
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.blue.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.blue.shade200),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.info_outline, color: Colors.blue.shade700, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Businesses found violating these terms will be permanently removed from the platform.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.blue.shade900,
+                    height: 1.3,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+}
+  
   Widget _buildImagePicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -620,7 +913,7 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
-                      : Text(_currentPage == 2 ? 'Complete Setup' : 'Next'),
+                      : Text(_currentPage == 3 ? 'Complete Setup' : 'Next'),
                 );
               },
             ),
@@ -854,17 +1147,17 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
   }
 
   void _nextPageOrFinish() {
-    if (_currentPage == 2) {
-      _finishSetup();
-    } else {
-      if (_validateCurrentPage()) {
-        _pageController.nextPage(
-          duration: const Duration(milliseconds: 300),
-          curve: Curves.easeInOut,
-        );
-      }
+  if (_currentPage == 3) {  // Changed from 2 to 3
+    _finishSetup();
+  } else {
+    if (_validateCurrentPage()) {
+      _pageController.nextPage(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
+}
 
   bool _validateCurrentPage() {
     if (_currentPage == 0) {
@@ -888,6 +1181,15 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
   Future<void> _finishSetup() async {
     if (!_validateCurrentPage()) return;
 
+    if (!_acceptedTerms || !_acceptedProhibitedItems) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Please accept all terms and conditions to continue'),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    return;
+  }
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final businessProvider = Provider.of<BusinessProvider>(context, listen: false);
     

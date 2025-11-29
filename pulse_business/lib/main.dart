@@ -11,6 +11,7 @@ import 'models/purchase.dart';
 import 'providers/auth_provider.dart';
 import 'providers/business_provider.dart';
 import 'providers/deals_provider.dart';
+import 'screens/main/login_screen.dart';
 import 'screens/stripe/stripe_onboarding_screen.dart';
 import 'services/stripe_connect_service.dart';
 import 'screens/auth/auth_screen.dart';
@@ -136,7 +137,7 @@ class PulseBusinessApp extends StatelessWidget {
           path: '/auth',
           builder: (context, state) {
             print('🔧 Router: Building auth screen');
-            return const AuthScreen();
+            return const LoginScreen();
           },
         ),
         GoRoute(

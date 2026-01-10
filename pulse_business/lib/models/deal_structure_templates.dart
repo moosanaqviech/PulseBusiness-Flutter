@@ -668,3 +668,160 @@ class FlashSaleTemplate extends DealStructureTemplate {
     return defaults;
   }
 }
+
+
+
+class RecurringHappyHourTemplate extends DealStructureTemplate {
+  @override
+  String get id => 'recurring_happy_hour';
+  
+  @override
+  String get name => 'Happy Hour';
+  
+  @override
+  String get description => 'Recurring weekly deals - set it once, runs automatically';
+  
+  @override
+  String get icon => '🍹';
+  
+  @override
+  Color get primaryColor => Colors.orange;
+
+  @override
+  TemplateCategory get category => TemplateCategory.timeBased;
+  
+  @override
+  List<String> get tags => ['recurring', 'weekly', 'happy_hour', 'drinks', 'food'];
+  
+  @override
+  List<TemplateField> get requiredFields => [
+    const TemplateField(
+      id: 'deal_title',
+      label: 'Deal Title',
+      description: 'Name your happy hour deal',
+      type: FieldType.text,
+      required: true,
+      defaultValue: 'Happy Hour',
+    ),
+    const TemplateField(
+      id: 'discount_percentage',
+      label: 'Discount Percentage',
+      description: 'How much % off to offer',
+      type: FieldType.percentage,
+      required: true,
+      constraints: {
+        'min': 10,
+        'max': 60,
+        'step': 5,
+      },
+      defaultValue: 25.0,
+    ),
+    const TemplateField(
+      id: 'original_price',
+      label: 'Original Price',
+      description: 'Regular price of the item',
+      type: FieldType.currency,
+      required: true,
+      constraints: {
+        'min': 1.00,
+        'max': 500.00,
+      },
+    ),
+  ];
+  
+  @override
+  List<TemplateField> get optionalFields => [
+    const TemplateField(
+      id: 'description',
+      label: 'Description',
+      description: 'Describe what\'s included in your happy hour',
+      type: FieldType.text,
+      required: false,
+    ),
+  ];
+  
+  @override
+  Map<String, String?> validateFields(Map<String, dynamic> data) {
+    final errors = <String, String?>{};
+    
+    // Validate at least one day is selected
+    final weekdays = data['recurring_weekdays'] as List<String>?;
+    final weekends = data['recurring_weekends'] as List<String>?;
+    
+    if ((weekdays == null || weekdays.isEmpty) && 
+        (weekends == null || weekends.isEmpty)) {
+      errors['days'] = 'Please select at least one day';
+    }
+    
+    // Validate time ranges
+    if (weekdays != null && weekdays.isNotEmpty) {
+      if (data['weekday_start_time'] == null || data['weekday_end_time'] == null) {
+        errors['weekday_times'] = 'Please set weekday hours';
+      }
+    }
+    
+    if (weekends != null && weekends.isNotEmpty) {
+      if (data['weekend_start_time'] == null || data['weekend_end_time'] == null) {
+        errors['weekend_times'] = 'Please set weekend hours';
+      }
+    }
+    
+    // Validate discount
+    final discountPercent = data['discount_percentage'];
+    if (discountPercent == null || discountPercent < 10 || discountPercent > 60) {
+      errors['discount_percentage'] = 'Discount must be between 10% and 60%';
+    }
+    
+    return errors;
+  }
+  
+  @override
+  String generatePreview(Map<String, dynamic> data, Business business) {
+    final discount = data['discount_percentage']?.round() ?? 25;
+    final days = _formatSelectedDays(data);
+    final times = _formatTimes(data);
+    
+    return '$discount% OFF • $days • $times';
+  }
+  
+  String _formatSelectedDays(Map<String, dynamic> data) {
+    final weekdays = data['recurring_weekdays'] as List<String>? ?? [];
+    final weekends = data['recurring_weekends'] as List<String>? ?? [];
+    
+    if (weekdays.length == 5 && weekends.length == 2) {
+      return 'Every Day';
+    } else if (weekdays.length == 5) {
+      return 'Weekdays';
+    } else if (weekends.length == 2) {
+      return 'Weekends';
+    } else {
+      final allDays = [...weekdays, ...weekends];
+      return allDays.map((d) => d.substring(0, 3)).join(', ');
+    }
+  }
+  
+  String _formatTimes(Map<String, dynamic> data) {
+    final weekdays = data['recurring_weekdays'] as List<String>? ?? [];
+    final weekends = data['recurring_weekends'] as List<String>? ?? [];
+    
+    if (weekdays.isNotEmpty && weekends.isEmpty) {
+      return '${data['weekday_start_time']} - ${data['weekday_end_time']}';
+    } else if (weekends.isNotEmpty && weekdays.isEmpty) {
+      return '${data['weekend_start_time']} - ${data['weekend_end_time']}';
+    } else {
+      return 'Multiple time slots';
+    }
+  }
+  
+  @override
+  Map<String, dynamic> getSmartDefaults(Business business, TemplateContext context) {
+    return {
+      'deal_title': '${business.name} Happy Hour',
+      'discount_percentage': 25.0,
+      'recurring_weekdays': ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+      'weekday_start_time': '16:00',
+      'weekday_end_time': '19:00',
+      'description': 'Join us for happy hour! Enjoy great food and drinks at amazing prices.',
+    };
+  }
+}

@@ -40,7 +40,9 @@ class TemplateTransformationService {
         return _transformBOGOToDeal(finalData, business, context, customStartTime);
       case 'flash_sale':
         return _transformFlashSaleToDeal(finalData, business, context, customStartTime);
-      
+
+      case 'recurring_happy_hour':
+              return _transformHappyHourToDeal(finalData, business, context, customStartTime);
       default:
         throw Exception('Unknown template type: ${template.id}');
     }
@@ -104,7 +106,7 @@ class TemplateTransformationService {
       createdAt: DateTime.now(),
       isTaxApplicable: business.isTaxApplicable,
       // Additional metadata for tracking
-     
+     businessLogoUrl: business.imageUrl,
     );
   }
   
@@ -149,6 +151,7 @@ class TemplateTransformationService {
     isScheduled: timing['isScheduled'],
     createdAt: DateTime.now(),
     isTaxApplicable: business.isTaxApplicable,
+    businessLogoUrl: business.imageUrl,
   );
 }
 
@@ -489,6 +492,7 @@ DateTime _getDefaultExpirationTime(TemplateContext context, DateTime baseTime) {
       isScheduled: customStartTime != null,
       createdAt: DateTime.now(),
       isTaxApplicable: business.isTaxApplicable,
+      businessLogoUrl: business.imageUrl,
     );
   }
   
@@ -663,4 +667,103 @@ DateTime _getDefaultExpirationTime(TemplateContext context, DateTime baseTime) {
   ) {
     return template.generatePreview(data, business);
   }
+
+  Deal _transformHappyHourToDeal(
+  Map<String, dynamic> data,
+  Business business,
+  TemplateContext context,
+  DateTime? customStartTime,
+) {
+  // Extract recurring data
+  final weekdays = data['recurring_weekdays'] as List<String>? ?? [];
+  final weekends = data['recurring_weekends'] as List<String>? ?? [];
+  final weekdayStartTime = data['weekday_start_time'] ?? '16:00';
+  final weekdayEndTime = data['weekday_end_time'] ?? '19:00';
+  final weekendStartTime = data['weekend_start_time'] ?? '12:00';
+  final weekendEndTime = data['weekend_end_time'] ?? '15:00';
+  
+  // Extract deal details
+  final title = data['deal_title'] ?? '${business.name} Happy Hour';
+  final description = data['description'] ?? 'Join us for happy hour! Enjoy great savings on food and drinks.';
+  final discountPercentage = data['discount_percentage'] ?? 25;
+  final originalPrice = data['original_price'] ?? 15.99;
+  final dealPrice = originalPrice * (1 - discountPercentage / 100);
+  
+  // Format schedule for display
+  final scheduleText = _formatRecurringSchedule(
+    weekdays, 
+    weekends, 
+    weekdayStartTime, 
+    weekdayEndTime, 
+    weekendStartTime, 
+    weekendEndTime
+  );
+  
+  // ✅ BUILD RECURRING SCHEDULE OBJECT
+  final recurringSchedule = {
+    'weekdays': weekdays,
+    'weekends': weekends,
+    'weekdayTimes': {
+      'start': weekdayStartTime,
+      'end': weekdayEndTime,
+    },
+    'weekendTimes': {
+      'start': weekendStartTime,
+      'end': weekendEndTime,
+    },
+  };
+  
+  // For recurring deals, we set them to start immediately and expire far in the future
+  // The actual time-based filtering happens client-side based on recurringSchedule
+  return Deal(
+    title: title,
+    description: '$description\n\n📅 Schedule: $scheduleText',
+    category: business.category,
+    latitude: business.latitude,
+    longitude: business.longitude,
+    originalPrice: originalPrice,
+    dealPrice: dealPrice,
+    totalQuantity: 100, // Higher for recurring deals since they run indefinitely
+    remainingQuantity: 100,
+    businessId: business.id!,
+    businessName: business.name,
+    businessAddress: business.address,
+    startTime: DateTime.now(),
+    expirationTime: DateTime.now().add(Duration(days: 365)), // Set far in future for recurring
+    termsAndConditions: 'Valid during happy hour times only. $scheduleText. Cannot be combined with other offers.',
+    isActive: true,
+    isScheduled: false,
+    createdAt: DateTime.now(),
+    isTaxApplicable: business.isTaxApplicable,
+    // ✅ SET RECURRING FIELDS
+    isRecurring: true,
+    recurringSchedule: recurringSchedule,
+  );
+}
+String _formatRecurringSchedule(
+  List<String> weekdays,
+  List<String> weekends,
+  String weekdayStart,
+  String weekdayEnd,
+  String weekendStart,
+  String weekendEnd,
+) {
+  final parts = <String>[];
+  
+  if (weekdays.isNotEmpty) {
+    final dayNames = weekdays.length == 5 
+      ? 'Mon-Fri' 
+      : weekdays.map((d) => d.substring(0, 3).toUpperCase()).join(', ');
+    parts.add('$dayNames $weekdayStart-$weekdayEnd');
+  }
+  
+  if (weekends.isNotEmpty) {
+    final dayNames = weekends.length == 2 
+      ? 'Sat-Sun' 
+      : weekends.map((d) => d.substring(0, 3).toUpperCase()).join(', ');
+    parts.add('$dayNames $weekendStart-$weekendEnd');
+  }
+  
+  return parts.join(' • ');
+}
 }

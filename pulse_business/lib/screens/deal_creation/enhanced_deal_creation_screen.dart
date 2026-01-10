@@ -35,7 +35,8 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
   final List<DealStructureTemplate> _availableTemplates = [
     PercentageOffTemplate(),
     ComboDealTemplate(),
-    FlashSaleTemplate()
+    FlashSaleTemplate(),
+    RecurringHappyHourTemplate(),
   ];
   List<DealStructureTemplate> _filteredTemplates = [];
    String? _selectedCategory;
@@ -54,6 +55,14 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
   List<File> _selectedImages = []; // ✅ Changed from File? _selectedImage
   int _currentPreviewImageIndex = 0; // ✅ For live preview
   int _currentFullPreviewImageIndex = 0; // ✅ For preview tab
+
+  // Add these with your other state variables
+List<String> _selectedWeekdays = [];
+List<String> _selectedWeekends = [];
+TimeOfDay _weekdayStartTime = const TimeOfDay(hour: 16, minute: 0); // 4 PM
+TimeOfDay _weekdayEndTime = const TimeOfDay(hour: 19, minute: 0); // 7 PM
+TimeOfDay _weekendStartTime = const TimeOfDay(hour: 12, minute: 0); // 12 PM
+TimeOfDay _weekendEndTime = const TimeOfDay(hour: 15, minute: 0); // 3 PM
 
   @override
   void initState() {
@@ -590,6 +599,14 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
     _controllers.clear();
     _templateData.clear();
     
+    if (_selectedTemplate!.id == 'recurring_happy_hour') {
+    _selectedWeekdays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    _selectedWeekends = [];
+    _weekdayStartTime = const TimeOfDay(hour: 16, minute: 0);
+    _weekdayEndTime = const TimeOfDay(hour: 19, minute: 0);
+    _updateRecurringData();
+  }
+
     // Create controllers for all fields
     final allFields = [..._selectedTemplate!.requiredFields, ..._selectedTemplate!.optionalFields];
     
@@ -658,10 +675,18 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
             const SizedBox(height: 24),
             
             // Timing section
+            if (_selectedTemplate!.id != 'recurring_happy_hour') ...[
             _buildTimingSection(),
-            
             const SizedBox(height: 24),
+            ],
             
+          // ✅ ADD THIS: Recurring schedule section for Happy Hour
+          if (_selectedTemplate!.id == 'recurring_happy_hour')
+            _buildRecurringScheduleSection(),
+          
+          if (_selectedTemplate!.id == 'recurring_happy_hour')
+            const SizedBox(height: 24),
+
             // Required fields
             _buildFieldSection('Required Information', _selectedTemplate!.requiredFields),
             
@@ -2218,6 +2243,278 @@ String _formatDateTime(DateTime dateTime) {
       );
     }
   }
+
+  Widget _buildRecurringScheduleSection() {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Schedule',
+        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+      const SizedBox(height: 8),
+      Text(
+        'Select the days and times your happy hour runs',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Colors.grey.shade600,
+        ),
+      ),
+      const SizedBox(height: 16),
+      
+      // Weekday selection
+      _buildDaySelectionGroup(
+        title: 'Weekdays',
+        days: ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+        selectedDays: _selectedWeekdays,
+        onDayToggle: (day) {
+          setState(() {
+            if (_selectedWeekdays.contains(day)) {
+              _selectedWeekdays.remove(day);
+            } else {
+              _selectedWeekdays.add(day);
+            }
+            _updateRecurringData();
+          });
+        },
+        startTime: _weekdayStartTime,
+        endTime: _weekdayEndTime,
+        onStartTimeChanged: (time) {
+          setState(() {
+            _weekdayStartTime = time;
+            _updateRecurringData();
+          });
+        },
+        onEndTimeChanged: (time) {
+          setState(() {
+            _weekdayEndTime = time;
+            _updateRecurringData();
+          });
+        },
+      ),
+      
+      const SizedBox(height: 24),
+      
+      // Weekend selection
+      _buildDaySelectionGroup(
+        title: 'Weekends',
+        days: ['saturday', 'sunday'],
+        selectedDays: _selectedWeekends,
+        onDayToggle: (day) {
+          setState(() {
+            if (_selectedWeekends.contains(day)) {
+              _selectedWeekends.remove(day);
+            } else {
+              _selectedWeekends.add(day);
+            }
+            _updateRecurringData();
+          });
+        },
+        startTime: _weekendStartTime,
+        endTime: _weekendEndTime,
+        onStartTimeChanged: (time) {
+          setState(() {
+            _weekendStartTime = time;
+            _updateRecurringData();
+          });
+        },
+        onEndTimeChanged: (time) {
+          setState(() {
+            _weekendEndTime = time;
+            _updateRecurringData();
+          });
+        },
+      ),
+      
+      // Validation message
+      if (_selectedWeekdays.isEmpty && _selectedWeekends.isEmpty)
+        Container(
+          margin: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.orange.shade50,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.orange.shade200),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.warning_amber, color: Colors.orange.shade700, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'Please select at least one day',
+                  style: TextStyle(
+                    color: Colors.orange.shade700,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+    ],
+  );
+}
+
+Widget _buildDaySelectionGroup({
+  required String title,
+  required List<String> days,
+  required List<String> selectedDays,
+  required Function(String) onDayToggle,
+  required TimeOfDay startTime,
+  required TimeOfDay endTime,
+  required Function(TimeOfDay) onStartTimeChanged,
+  required Function(TimeOfDay) onEndTimeChanged,
+}) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Text(
+            title,
+            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            onPressed: () {
+              setState(() {
+                if (selectedDays.length == days.length) {
+                  selectedDays.clear();
+                } else {
+                  selectedDays.clear();
+                  selectedDays.addAll(days);
+                }
+                _updateRecurringData();
+              });
+            },
+            child: Text(
+              selectedDays.length == days.length ? 'Clear All' : 'Select All',
+              style: const TextStyle(fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
+      
+      // Day checkboxes
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: days.map((day) {
+          final isSelected = selectedDays.contains(day);
+          return FilterChip(
+            label: Text(
+              _formatDayName(day),
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey.shade700,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+            selected: isSelected,
+            onSelected: (selected) => onDayToggle(day),
+            selectedColor: AppTheme.primaryColor,
+            checkmarkColor: Colors.white,
+            backgroundColor: Colors.grey.shade100,
+          );
+        }).toList(),
+      ),
+      
+      // Time pickers (only show if at least one day is selected)
+      if (selectedDays.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: startTime,
+                  );
+                  if (picked != null) {
+                    onStartTimeChanged(picked);
+                  }
+                },
+                icon: const Icon(Icons.access_time, size: 18),
+                label: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Start',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    Text(
+                      startTime.format(context),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  final picked = await showTimePicker(
+                    context: context,
+                    initialTime: endTime,
+                  );
+                  if (picked != null) {
+                    onEndTimeChanged(picked);
+                  }
+                },
+                icon: const Icon(Icons.access_time, size: 18),
+                label: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'End',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                    Text(
+                      endTime.format(context),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    ],
+  );
+}
+
+String _formatDayName(String day) {
+  return day[0].toUpperCase() + day.substring(1, 3);
+}
+
+void _updateRecurringData() {
+  // Store recurring schedule in template data
+  _templateData['recurring_weekdays'] = List<String>.from(_selectedWeekdays);
+  _templateData['recurring_weekends'] = List<String>.from(_selectedWeekends);
+  _templateData['weekday_start_time'] = '${_weekdayStartTime.hour.toString().padLeft(2, '0')}:${_weekdayStartTime.minute.toString().padLeft(2, '0')}';
+  _templateData['weekday_end_time'] = '${_weekdayEndTime.hour.toString().padLeft(2, '0')}:${_weekdayEndTime.minute.toString().padLeft(2, '0')}';
+  _templateData['weekend_start_time'] = '${_weekendStartTime.hour.toString().padLeft(2, '0')}:${_weekendStartTime.minute.toString().padLeft(2, '0')}';
+  _templateData['weekend_end_time'] = '${_weekendEndTime.hour.toString().padLeft(2, '0')}:${_weekendEndTime.minute.toString().padLeft(2, '0')}';
+}
 
   Future<void> _createDeal() async {
     if (_selectedTemplate == null) {

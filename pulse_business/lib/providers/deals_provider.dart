@@ -103,7 +103,7 @@ class DealsProvider extends ChangeNotifier {
     final docRef = await _firestore.collection('deals').add(dealMap);
     print('🔧 DealsProvider: Deal created with ID: ${docRef.id}');
     
-    // ✅ Update local state (like your old method does)
+    // ✅ Update local state (like old method does)
     final createdDeal = deal.copyWith(
       id: docRef.id,
       imageUrl: uploadedImageUrls.isNotEmpty ? uploadedImageUrls.first : null,

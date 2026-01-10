@@ -29,6 +29,10 @@ class Deal {
   final DateTime? startTime;
   final bool isScheduled;
   final bool isTaxApplicable;
+  final String? businessLogoUrl;
+
+  final bool isRecurring;
+  final Map<String, dynamic>? recurringSchedule;
 
   Deal({
     this.id,
@@ -56,6 +60,9 @@ class Deal {
     this.startTime,
     this.isScheduled = false,
     this.isTaxApplicable = true,
+    this.businessLogoUrl,
+    this.isRecurring = false,
+    this.recurringSchedule,
   }) : 
     remainingQuantity = remainingQuantity ?? totalQuantity,
     createdAt = createdAt ?? DateTime.now();
@@ -99,6 +106,11 @@ class Deal {
         termsAndConditions: map['termsAndConditions'],
         isScheduled: map['isScheduled'] ?? false,
         isTaxApplicable: map['isTaxApplicable'] ?? true, // Safe default for existing deals
+        businessLogoUrl: map['businessLogoUrl'],
+        isRecurring: map['isRecurring'] ?? false,
+        recurringSchedule: map['recurringSchedule'] != null 
+          ? Map<String, dynamic>.from(map['recurringSchedule'])
+          : null,
       );
     } catch (e, stackTrace) {
       print('❌ Error in Business Deal.fromMap: $e');
@@ -169,6 +181,9 @@ class Deal {
       'termsAndConditions': termsAndConditions,
       'isScheduled': isScheduled,
       'isTaxApplicable': isTaxApplicable,
+      'businessLogoUrl': businessLogoUrl,
+      'isRecurring': isRecurring,
+      'recurringSchedule': recurringSchedule,
     };
   }
 
@@ -234,6 +249,9 @@ class Deal {
     DateTime? startTime,
     bool? isScheduled,
     bool? isTaxApplicable,
+    String? businessLogoUrl,
+    bool? isRecurring,
+    Map<String, dynamic>? recurringSchedule,
 
   }) {
     return Deal(
@@ -262,6 +280,9 @@ class Deal {
       startTime: startTime ?? this.startTime,
       isScheduled: isScheduled ?? this.isScheduled,
       isTaxApplicable: isTaxApplicable ?? this.isTaxApplicable,
+      businessLogoUrl: businessLogoUrl ?? this.businessLogoUrl,
+      isRecurring: isRecurring ?? this.isRecurring,
+      recurringSchedule: recurringSchedule ?? this.recurringSchedule,
     );
   }
 

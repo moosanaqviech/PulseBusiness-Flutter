@@ -26,9 +26,19 @@ import 'services/redemption_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Workaround for iOS duplicate initialization
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } on FirebaseException catch (e) {
+    if (e.code == 'duplicate-app') {
+      print('ℹ️ Firebase already initialized');
+    } else {
+      rethrow;
+    }
+  }
+  
   try {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
@@ -36,16 +46,15 @@ void main() async {
       debugPrint('✅ Auth working - SHA-1 is correct');
       print('✅ Auth working - SHA-1 is correct');
     } else {
-      print('❌ No userX - need to sign in first');
+      print('❌ No user - need to sign in first');
     }
   } catch (e) {
     debugPrint('❌ Auth test failed: $e');
     debugPrint('💡 This confirms SHA-1 fingerprint mismatch');
   }
-  //await DatabaseHelper.initializeOnAppStart();
+  
   runApp(const PulseBusinessApp());
 }
-
 class PulseBusinessApp extends StatelessWidget {
   const PulseBusinessApp({super.key});
 

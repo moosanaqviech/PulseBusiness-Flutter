@@ -11,7 +11,7 @@ import 'deals_provider.dart';
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  static final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   
   AppUser? _currentUser;
   bool _isLoading = false;
@@ -241,52 +241,84 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // ============================================
-  // GOOGLE SIGN IN
-  // ============================================
-
+  
   /// Sign in with Google
-  Future<bool> signInWithGoogle() async {
-    try {
-      print('🔧 AuthProvider: Starting Google sign in');
-      _setLoading(true);
-      _clearError();
+  // ============================================
+  // GOOGLE SIGN IN (v7.x API)
+  // ============================================
 
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) {
-        print('🔧 AuthProvider: Google sign in cancelled by user');
-        _setLoading(false);
-        return false; // User cancelled
-      }
+/// Sign in with Google
+Future<bool> signInWithGoogle() async {
+  try {
+    print('🔧 AuthProvider: Starting Google sign in');
+    _setLoading(true);
+    _clearError();
 
-      print('🔧 AuthProvider: Google user selected: ${googleUser.email}');
-      final GoogleSignInAuthentication googleAuth = await googleUser.authentication;
-      
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final UserCredential result = await _auth.signInWithCredential(credential);
-      
-      if (result.user != null) {
-        print('🔧 AuthProvider: Google sign in successful');
-        await _loadUserProfile(result.user!);
-        return true;
-      }
-      return false;
-    } on FirebaseAuthException catch (e) {
-      print('❌ AuthProvider: Firebase auth error: ${e.code} - ${e.message}');
-      _handleAuthError(e);
-      return false;
-    } catch (e) {
-      print('❌ AuthProvider: Google sign in error: $e');
-      _errorMessage = 'Google sign in failed';
-      return false;
-    } finally {
+    // Authenticate with Google (v7.x API)
+    final GoogleSignInAccount googleUser = await _googleSignIn.authenticate();
+    
+    print('🔧 AuthProvider: Google user authenticated: ${googleUser.email}');
+    
+    // Get ID token (synchronous in v7.x)
+    final idToken = googleUser.authentication.idToken;
+    
+    if (idToken == null) {
+      print('❌ AuthProvider: Failed to get ID token');
+      _errorMessage = 'Failed to get authentication token';
       _setLoading(false);
+      return false;
     }
+    
+    // Get authorization client
+    final authorizationClient = googleUser.authorizationClient;
+    
+    // Get or request authorization for scopes
+    GoogleSignInClientAuthorization? authorization = 
+        await authorizationClient.authorizationForScopes(['email', 'profile']);
+    
+    // If no existing authorization, request new one
+    if (authorization == null || authorization.accessToken == null) {
+      print('🔧 AuthProvider: Requesting new authorization');
+      authorization = await authorizationClient.authorizeScopes(['email', 'profile']);
+    }
+    
+    final accessToken = authorization.accessToken;
+    
+    if (accessToken == null) {
+      print('❌ AuthProvider: Failed to get access token');
+      _errorMessage = 'Failed to get access token';
+      _setLoading(false);
+      return false;
+    }
+    
+    print('🔧 AuthProvider: Got access token and ID token');
+    
+    // Create Firebase credential
+    final credential = GoogleAuthProvider.credential(
+      accessToken: accessToken,
+      idToken: idToken,
+    );
+
+    final UserCredential result = await _auth.signInWithCredential(credential);
+    
+    if (result.user != null) {
+      print('🔧 AuthProvider: Google sign in successful');
+      await _loadUserProfile(result.user!);
+      return true;
+    }
+    return false;
+  } on FirebaseAuthException catch (e) {
+    print('❌ AuthProvider: Firebase auth error: ${e.code} - ${e.message}');
+    _handleAuthError(e);
+    return false;
+  } catch (e) {
+    print('❌ AuthProvider: Google sign in error: $e');
+    _errorMessage = 'Google sign in failed';
+    return false;
+  } finally {
+    _setLoading(false);
   }
+}
 
   // ============================================
   // PASSWORD RESET

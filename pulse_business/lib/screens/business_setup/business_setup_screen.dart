@@ -11,8 +11,10 @@ import 'dart:io';
 import '../../providers/auth_provider.dart';
 import '../../providers/business_provider.dart';
 import '../../models/business.dart';
+import '../../services/google_places_service.dart';
 import '../../utils/theme.dart';
 
+import '../../widgets/business_autocomplete_field.dart';
 import '../legal/terms_of_service_screen.dart';
 import '../legal/privacy_policy_screen.dart';
 
@@ -40,6 +42,10 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
   final _emailController = TextEditingController();
   final _websiteController = TextEditingController();
   final _businessHoursController = TextEditingController();
+  final GooglePlacesService _placesService = GooglePlacesService();
+  double? _userLat;
+  double? _userLng;
+  bool _autoFilled = false; // Track if we auto-filled from Google
   
   String _selectedCategory = 'Restaurant';
   File? _selectedImage;
@@ -61,7 +67,18 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
     super.initState();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     _emailController.text = authProvider.currentUser?.email ?? '';
+    _initUserLocation();
   }
+
+Future<void> _initUserLocation() async {
+  final pos = await _placesService.getCurrentPosition();
+  if (pos != null && mounted) {
+    setState(() {
+      _userLat = pos.latitude;
+      _userLng = pos.longitude;
+    });
+  }
+}
 
   @override
   void dispose() {
@@ -77,6 +94,7 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
     _websiteController.dispose();
     _businessHoursController.dispose();
     _pageController.dispose();
+    _placesService.dispose();
     super.dispose();
   }
 
@@ -166,19 +184,14 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
             _buildImagePicker(),
             const SizedBox(height: 24),
             
-            TextFormField(
-              controller: _businessNameController,
-              decoration: const InputDecoration(
-                labelText: 'Business Name *',
-                prefixIcon: Icon(Icons.business),
-              ),
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return 'Business name is required';
-                }
-                return null;
-              },
-            ),
+           BusinessAutocompleteField(
+  controller: _businessNameController,
+  placesService: _placesService,
+  userLat: _userLat,
+  userLng: _userLng,
+  onPlaceSelected: _applyPlaceDetails,
+),
+
             const SizedBox(height: 16),
             
             TextFormField(
@@ -229,6 +242,8 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
             style: Theme.of(context).textTheme.headlineSmall,
           ),
           const SizedBox(height: 8),
+          _buildAutoFilledBanner(),
+          const SizedBox(height: 8),
           Text(
             'How can customers reach you?',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
@@ -275,7 +290,7 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
           
           TextFormField(
             controller: _businessHoursController,
-            maxLines: 2,
+            maxLines: 8,
             decoration: const InputDecoration(
               labelText: 'Business Hours (Optional)',
               prefixIcon: Icon(Icons.access_time),
@@ -312,6 +327,8 @@ class _BusinessSetupScreenState extends State<BusinessSetupScreen> {
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                _buildAutoFilledBanner(),
                 const SizedBox(height: 8),
                 Text(
                   'Enter your business address',
@@ -794,7 +811,7 @@ Widget _buildTermsPage() {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Map Marker',
+                      'Deal Card',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
@@ -821,7 +838,7 @@ Widget _buildTermsPage() {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Deal Card',
+                      'Map Marker',
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                         color: AppTheme.textSecondary,
                       ),
@@ -922,6 +939,35 @@ Widget _buildTermsPage() {
       ),
     );
   }
+
+ Widget _buildAutoFilledBanner() {
+  if (!_autoFilled) return const SizedBox.shrink();
+  
+  return Container(
+    margin: const EdgeInsets.only(bottom: 16),
+    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+    decoration: BoxDecoration(
+      color: Colors.deepPurple.shade50,
+      borderRadius: BorderRadius.circular(8),
+      border: Border.all(color: Colors.deepPurple.shade100),
+    ),
+    child: Row(
+      children: [
+        Icon(Icons.auto_awesome, color: Colors.deepPurple.shade400, size: 18),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Auto-filled from Google. Review and adjust if needed.',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.deepPurple.shade700,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -1232,4 +1278,114 @@ Widget _buildTermsPage() {
       );
     }
   }
+
+void _applyPlaceDetails(PlaceDetails details) {
+  setState(() {
+    // ── Page 0: Basic Info ──
+    _businessNameController.text = details.name;
+    if (details.category != null && _categories.contains(details.category)) {
+      _selectedCategory = details.category!;
+    }
+    if (details.description != null && details.description!.isNotEmpty) {
+      _descriptionController.text = details.description!;
+    }
+
+    // ── Page 1: Contact ──
+    if (details.phone != null && details.phone!.isNotEmpty) {
+      _phoneController.text = details.phone!;
+    }
+    if (details.website != null && details.website!.isNotEmpty) {
+      _websiteController.text = details.website!;
+    }
+    if (details.weekdayHours != null && details.weekdayHours!.isNotEmpty) {
+      _businessHoursController.text = details.formattedHours;
+    }
+
+    // ── Page 2: Location ──
+    if (details.streetNumber != null) {
+      _streetNumberController.text = details.streetNumber!;
+    }
+    if (details.streetName != null) {
+      _streetNameController.text = details.streetName!;
+    }
+    if (details.city != null) {
+      _cityController.text = details.city!;
+    }
+    if (details.postalCode != null) {
+      _zipCodeController.text = details.postalCode!;
+    }
+    if (details.country != null) {
+      _countryController.text = details.country!;
+    }
+    if (details.lat != null && details.lng != null) {
+      _selectedLocation = LatLng(details.lat!, details.lng!);
+    }
+
+    _autoFilled = true;
+  });
+
+  // Animate map to new location if available
+  if (details.lat != null && details.lng != null) {
+    _mapController?.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(details.lat!, details.lng!),
+        17,
+      ),
+    );
+  }
+
+  // Download Google photo as business logo (async, non-blocking)
+  if (details.photoReference != null) {
+    _downloadAndSetPhoto(details.photoReference!);
+  }
+
+  // Show success feedback - THIS is the wow moment
+  _showAutoFillSuccess(details);
+}
+
+/// Downloads the Google Places photo and sets it as the business logo.
+/// Runs async so it doesn't block the rest of the auto-fill.
+Future<void> _downloadAndSetPhoto(String photoReference) async {
+  try {
+    final file = await _placesService.downloadPlacePhoto(photoReference);
+    if (file != null && mounted) {
+      setState(() {
+        _selectedImage = file;
+      });
+      debugPrint('✅ Business photo auto-filled from Google');
+    }
+  } catch (e) {
+    debugPrint('⚠️ Photo auto-fill failed (non-critical): $e');
+    // Non-critical - user can still pick their own photo
+  }
+}
+
+void _showAutoFillSuccess(PlaceDetails details) {
+  // Count how many fields were auto-filled
+  int fieldCount = 1; // name always filled
+  if (details.phone != null) fieldCount++;
+  if (details.website != null) fieldCount++;
+  if (details.weekdayHours != null) fieldCount++;
+  if (details.streetNumber != null) fieldCount++;
+  if (details.streetName != null) fieldCount++;
+  if (details.city != null) fieldCount++;
+  if (details.postalCode != null) fieldCount++;
+  if (details.category != null) fieldCount++;
+
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Row(
+        children: [
+          const Icon(Icons.auto_awesome, color: Colors.white, size: 20),
+          const SizedBox(width: 8),
+          Text('$fieldCount fields auto-filled from Google!'),
+        ],
+      ),
+      backgroundColor: Colors.deepPurple,
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      duration: const Duration(seconds: 3),
+    ),
+  );
+}
 }

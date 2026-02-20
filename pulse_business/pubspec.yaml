@@ -2,7 +2,7 @@ name: pulse_business
 description: A Flutter business app for managing deals and promotions.
 publish_to: 'none'
 
-version: 1.0.0+2
+version: 1.0.0+4
 
 environment:
   sdk: '>=3.0.0 <4.0.0'
@@ -35,7 +35,8 @@ dependencies:
   
   # Google Maps & Location
   google_sign_in: ^7.2.0
-  google_maps_flutter: ^2.13.1
+  google_maps_flutter: 2.7.1
+  google_maps_flutter_android: 2.14.0 
   location: ^8.0.1
   geocoding: ^4.0.0
   geolocator: ^14.0.2
@@ -66,6 +67,8 @@ dependencies:
 
   app_links: ^7.0.0  # For deep link handling
   url_launcher: ^6.1.0  # For opening Stripe onboarding in browser
+
+  path_provider: ^2.1.1
 
 dev_dependencies:
   flutter_test:

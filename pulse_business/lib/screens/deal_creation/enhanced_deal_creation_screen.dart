@@ -7,6 +7,7 @@ import 'package:intl/intl.dart';
 import 'package:pulse_business/models/deal_template.dart' hide FlashSaleTemplate;
 import 'dart:io';
 
+import '../../constants/deal_tags.dart';
 import '../../models/business.dart';
 import '../../models/deal_structure_templates.dart';
 import '../../providers/business_provider.dart';
@@ -14,6 +15,7 @@ import '../../providers/deals_provider.dart';
 import '../../services/context_analyzer.dart';
 import '../../services/template_transformation_service.dart';
 import '../../utils/theme.dart';
+import '../../widgets/tag_picker.dart';
 import '../stripe/stripe_onboarding_screen.dart';
 
 class EnhancedDealCreationScreen extends StatefulWidget {
@@ -53,6 +55,7 @@ class _EnhancedDealCreationScreenState extends State<EnhancedDealCreationScreen>
   DateTime? _startTime;
   DateTime? _endTime;
   List<File> _selectedImages = []; // ✅ Changed from File? _selectedImage
+  List<String> _selectedTags = [];
   int _currentPreviewImageIndex = 0; // ✅ For live preview
   int _currentFullPreviewImageIndex = 0; // ✅ For preview tab
 
@@ -674,6 +677,11 @@ TimeOfDay _weekendEndTime = const TimeOfDay(hour: 15, minute: 0); // 3 PM
             
             const SizedBox(height: 24),
             
+            TagPicker(
+              selectedTags: _selectedTags,
+              onChanged: (tags) => setState(() => _selectedTags = tags),
+            ),
+
             // Timing section
             if (_selectedTemplate!.id != 'recurring_happy_hour') ...[
             _buildTimingSection(),
@@ -1366,7 +1374,7 @@ Widget _buildLivePreview() {
       templateData: finalTemplateData,
       business: business,
       customStartTime: _startTime,
-    );
+    ).copyWith(tags: _selectedTags);
     
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1580,6 +1588,8 @@ Widget _buildDealPreviewCard() {
       templateData: finalTemplateData,
       business: business,
       customStartTime: _startTime,
+    ).copyWith(
+      tags: _selectedTags, // ✅ Show selected tags in preview
     );
     
     return SingleChildScrollView(
@@ -1613,7 +1623,7 @@ Widget _buildDealPreviewCard() {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Business name
+                        // Business name
                       Text(
                         business.name,
                         style: TextStyle(
@@ -1622,7 +1632,47 @@ Widget _buildDealPreviewCard() {
                           fontWeight: FontWeight.w500,
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 6),
+
+                      // Tag chips
+                      if (previewDeal.tags.isNotEmpty) ...[
+                        SizedBox(
+                          height: 28,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: previewDeal.tags.length,
+                            separatorBuilder: (_, __) => const SizedBox(width: 6),
+                            itemBuilder: (context, index) {
+                              final tag = DealTags.getById(previewDeal.tags[index]);
+                              if (tag == null) return const SizedBox.shrink();
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: tag.color.withOpacity(0.12),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: tag.color.withOpacity(0.3)),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(tag.emoji, style: const TextStyle(fontSize: 11)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      tag.label,
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w600,
+                                        color: tag.color,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                      ],
                       
                       // Deal title
                       Text(
@@ -2547,7 +2597,7 @@ void _updateRecurringData() {
         templateData: finalTemplateData,
         business: business,
         customStartTime: _startTime,
-      );
+      ).copyWith(tags: _selectedTags);
       
       // Create the deal using existing provider
       final dealsProvider = Provider.of<DealsProvider>(context, listen: false);

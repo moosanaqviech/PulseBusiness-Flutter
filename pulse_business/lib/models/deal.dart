@@ -33,6 +33,7 @@ class Deal {
 
   final bool isRecurring;
   final Map<String, dynamic>? recurringSchedule;
+  final List<String> tags;  // e.g. ['new_item', 'event_special']
 
   Deal({
     this.id,
@@ -63,6 +64,7 @@ class Deal {
     this.businessLogoUrl,
     this.isRecurring = false,
     this.recurringSchedule,
+    this.tags = const []
   }) : 
     remainingQuantity = remainingQuantity ?? totalQuantity,
     createdAt = createdAt ?? DateTime.now();
@@ -111,6 +113,7 @@ class Deal {
         recurringSchedule: map['recurringSchedule'] != null 
           ? Map<String, dynamic>.from(map['recurringSchedule'])
           : null,
+        tags: map['tags'] != null ? List<String>.from(map['tags']) : []
       );
     } catch (e, stackTrace) {
       print('❌ Error in Business Deal.fromMap: $e');
@@ -184,6 +187,7 @@ class Deal {
       'businessLogoUrl': businessLogoUrl,
       'isRecurring': isRecurring,
       'recurringSchedule': recurringSchedule,
+      'tags': tags,
     };
   }
 
@@ -252,7 +256,7 @@ class Deal {
     String? businessLogoUrl,
     bool? isRecurring,
     Map<String, dynamic>? recurringSchedule,
-
+    List<String>? tags,
   }) {
     return Deal(
       id: id ?? this.id,
@@ -283,6 +287,7 @@ class Deal {
       businessLogoUrl: businessLogoUrl ?? this.businessLogoUrl,
       isRecurring: isRecurring ?? this.isRecurring,
       recurringSchedule: recurringSchedule ?? this.recurringSchedule,
+      tags: tags ?? this.tags,
     );
   }
 

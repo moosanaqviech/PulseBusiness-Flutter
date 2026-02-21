@@ -1,17 +1,18 @@
-// Create this as: pulse_business/lib/widgets/deal_preview_card.dart
-// This matches the EXACT layout of the consumer app's DealCard
+// pulse_business/lib/widgets/deal_preview_card.dart
+// Updated with tag/flair chip display
 
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../models/deal.dart';
+import '../constants/deal_tags.dart';
 import '../utils/theme.dart';
 
 class DealPreviewCard extends StatelessWidget {
   final Deal deal;
   final bool showLabel;
-  final File? selectedImage; // For preview mode
+  final File? selectedImage;
 
   const DealPreviewCard({
     super.key,
@@ -43,7 +44,6 @@ class DealPreviewCard extends StatelessWidget {
           const SizedBox(height: 16),
         ],
         
-        // EXACT REPLICA OF CONSUMER DEAL CARD
         Card(
           elevation: 2,
           shape: RoundedRectangleBorder(
@@ -96,10 +96,18 @@ class DealPreviewCard extends StatelessWidget {
               ),
             ),
           ),
+
+        // Primary tag badge (top-right) — show first tag as overlay
+        if (deal.tags.isNotEmpty)
+          Positioned(
+            top: 12,
+            right: 12,
+            child: _buildOverlayTagBadge(deal.tags.first),
+          ),
         
-        // Favorite button (top-right) - disabled in preview
+        // Favorite button (top-right, below tag if present)
         Positioned(
-          top: 12,
+          top: deal.tags.isNotEmpty ? 48 : 12,
           right: 12,
           child: Container(
             decoration: const BoxDecoration(
@@ -108,7 +116,7 @@ class DealPreviewCard extends StatelessWidget {
             ),
             child: IconButton(
               icon: const Icon(Icons.favorite_border),
-              onPressed: null, // Disabled in preview
+              onPressed: null,
               color: Colors.grey.shade400,
               iconSize: 20,
             ),
@@ -118,8 +126,35 @@ class DealPreviewCard extends StatelessWidget {
     );
   }
 
+  Widget _buildOverlayTagBadge(String tagId) {
+    final tag = DealTags.getById(tagId);
+    if (tag == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(tag.emoji, style: const TextStyle(fontSize: 11)),
+          const SizedBox(width: 4),
+          Text(
+            tag.label,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildImage() {
-    // If we have a selected image from image picker (preview mode)
     if (selectedImage != null) {
       return Image.file(
         selectedImage!,
@@ -128,7 +163,6 @@ class DealPreviewCard extends StatelessWidget {
       );
     }
     
-    // If deal has an image URL
     if (deal.imageUrl != null && deal.imageUrl!.isNotEmpty) {
       return CachedNetworkImage(
         imageUrl: deal.imageUrl!,
@@ -137,45 +171,29 @@ class DealPreviewCard extends StatelessWidget {
         placeholder: (context, url) => Container(
           color: Colors.grey.shade100,
           child: Center(
-            child: Icon(
-              Icons.image,
-              color: Colors.grey.shade400,
-              size: 48,
-            ),
+            child: Icon(Icons.image, color: Colors.grey.shade400, size: 48),
           ),
         ),
         errorWidget: (context, url, error) => Container(
           color: Colors.grey.shade100,
           child: Center(
-            child: Icon(
-              Icons.broken_image,
-              color: Colors.grey.shade400,
-              size: 48,
-            ),
+            child: Icon(Icons.broken_image, color: Colors.grey.shade400, size: 48),
           ),
         ),
       );
     }
     
-    // Placeholder when no image
     return Container(
       color: Colors.grey.shade100,
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.add_a_photo,
-              color: Colors.grey.shade400,
-              size: 48,
-            ),
+            Icon(Icons.add_a_photo, color: Colors.grey.shade400, size: 48),
             const SizedBox(height: 8),
             Text(
               'Add deal image',
-              style: TextStyle(
-                color: Colors.grey.shade600,
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey.shade600, fontSize: 14),
             ),
           ],
         ),
@@ -199,6 +217,22 @@ class DealPreviewCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
+
+          // Tag chips row (horizontal scroll)
+          if (deal.tags.isNotEmpty) ...[
+            SizedBox(
+              height: 28,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                itemCount: deal.tags.length,
+                separatorBuilder: (_, __) => const SizedBox(width: 6),
+                itemBuilder: (context, index) {
+                  return _buildTagChip(deal.tags[index]);
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
           
           // Deal title
           Text(
@@ -243,71 +277,26 @@ class DealPreviewCard extends StatelessWidget {
               Text(
                 '\$${deal.dealPrice.toStringAsFixed(2)}',
                 style: const TextStyle(
-                  fontSize: 20,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
-                  color: Colors.green,
+                  color: AppTheme.priceColor,
                 ),
               ),
               const Spacer(),
-              
-              // Distance (placeholder in preview)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
+              // Remaining quantity
+              if (deal.remainingQuantity > 0)
+                Text(
+                  '${deal.remainingQuantity} left',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: deal.remainingQuantity <= 5
+                        ? Colors.red
+                        : Colors.grey.shade600,
+                    fontWeight: deal.remainingQuantity <= 5
+                        ? FontWeight.bold
+                        : FontWeight.normal,
+                  ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.location_on,
-                      size: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                    const SizedBox(width: 2),
-                    Text(
-                      '0.5 mi',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          
-          // Bottom info row
-          Row(
-            children: [
-              // Expiration
-              Icon(
-                Icons.access_time,
-                size: 14,
-                color: Colors.grey.shade500,
-              ),
-              const SizedBox(width: 4),
-              Text(
-                _getTimeRemaining(),
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey.shade600,
-                ),
-              ),
-              const Spacer(),
-              
-              // Quantity remaining
-              Text(
-                '${deal.remainingQuantity} left',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: deal.remainingQuantity < 5 ? Colors.red.shade600 : Colors.grey.shade600,
-                  fontWeight: deal.remainingQuantity < 5 ? FontWeight.w600 : FontWeight.normal,
-                ),
-              ),
             ],
           ),
         ],
@@ -315,18 +304,32 @@ class DealPreviewCard extends StatelessWidget {
     );
   }
 
-  String _getTimeRemaining() {
-    final now = DateTime.now();
-    final difference = deal.expirationTime.difference(now);
-    
-    if (difference.inDays > 0) {
-      return 'Expires in ${difference.inDays}d';
-    } else if (difference.inHours > 0) {
-      return 'Expires in ${difference.inHours}h';
-    } else if (difference.inMinutes > 0) {
-      return 'Expires in ${difference.inMinutes}m';
-    } else {
-      return 'Expired';
-    }
+  Widget _buildTagChip(String tagId) {
+    final tag = DealTags.getById(tagId);
+    if (tag == null) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: tag.color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: tag.color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(tag.emoji, style: const TextStyle(fontSize: 11)),
+          const SizedBox(width: 4),
+          Text(
+            tag.label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: tag.color,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

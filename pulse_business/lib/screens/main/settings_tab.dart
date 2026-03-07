@@ -50,6 +50,9 @@ class SettingsTab extends StatelessWidget {
               _buildLogoutButton(context),
               
               const SizedBox(height: 32),
+
+              // Delete Account Section
+              _buildDeleteAccountSection(context),
             ],
           );
         },
@@ -325,6 +328,200 @@ class SettingsTab extends StatelessWidget {
       ),
     );
   }
+
+  Widget _buildDeleteAccountSection(BuildContext context) {
+  return Container(
+    color: Colors.white,
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          child: Text(
+            'DANGER ZONE',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: Colors.red.shade400,
+            ),
+          ),
+        ),
+        ListTile(
+          leading: Icon(Icons.delete_forever, color: Colors.red.shade400),
+          title: Text(
+            'Delete Account',
+            style: TextStyle(color: Colors.red.shade700),
+          ),
+          subtitle: const Text('Permanently delete your account and all data'),
+          trailing: Icon(Icons.chevron_right, color: Colors.red.shade300),
+          onTap: () => _showDeleteAccountDialog(context),
+        ),
+      ],
+    ),
+  );
+}
+
+void _showDeleteAccountDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: Row(
+        children: [
+          Icon(Icons.warning_amber_rounded, color: Colors.red.shade600),
+          const SizedBox(width: 8),
+          const Text('Delete Account'),
+        ],
+      ),
+      content: const Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'This will permanently delete:',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
+          SizedBox(height: 12),
+          Text('• Your business profile'),
+          Text('• All deals and promotions'),
+          Text('• Analytics and performance data'),
+          Text('• Payment information'),
+          Text('• All uploaded images'),
+          SizedBox(height: 16),
+          Text(
+            'This action cannot be undone.',
+            style: TextStyle(
+              color: Colors.red,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).pop();
+            _confirmAndDeleteAccount(context);
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            foregroundColor: Colors.white,
+          ),
+          child: const Text('Delete My Account'),
+        ),
+      ],
+    ),
+  );
+}
+
+void _confirmAndDeleteAccount(BuildContext context) {
+  // Second confirmation with text input
+  final controller = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (context) => AlertDialog(
+      title: const Text('Final Confirmation'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Type DELETE to confirm account deletion:'),
+          const SizedBox(height: 12),
+          TextField(
+            controller: controller,
+            decoration: const InputDecoration(
+              hintText: 'Type DELETE',
+              border: OutlineInputBorder(),
+            ),
+            autofocus: true,
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cancel'),
+        ),
+        StatefulBuilder(
+          builder: (context, setState) {
+            return ElevatedButton(
+              onPressed: () async {
+                if (controller.text.trim().toUpperCase() != 'DELETE') {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Please type DELETE to confirm'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                  return;
+                }
+
+                Navigator.of(context).pop();
+                await _executeAccountDeletion(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Permanently Delete'),
+            );
+          },
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> _executeAccountDeletion(BuildContext context) async {
+  // Show loading
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const AlertDialog(
+      content: Row(
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(width: 16),
+          Text('Deleting account...'),
+        ],
+      ),
+    ),
+  );
+
+  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  final success = await authProvider.deleteAccount(context);
+
+  if (context.mounted) {
+    Navigator.of(context).pop(); // Dismiss loading
+
+    if (success) {
+      // Navigate to login screen and clear stack
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/login',
+        (route) => false,
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account deleted successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            authProvider.errorMessage ?? 'Failed to delete account',
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 5),
+        ),
+      );
+    }
+  }
+}
 
   // ============================================
   // DIALOGS

@@ -21,7 +21,7 @@ import 'screens/qr_scanner/redemption_success_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'utils/theme.dart';
 
-
+import 'package:google_sign_in/google_sign_in.dart';
 import 'services/redemption_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,7 +38,9 @@ void main() async {
       rethrow;
     }
   }
-  
+  await FirebaseAuth.instance.signOut();
+
+print('🔍 FORCED SIGNOUT DONE');
   try {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {

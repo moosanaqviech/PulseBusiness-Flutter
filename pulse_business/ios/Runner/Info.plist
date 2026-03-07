@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>UIDeviceFamily</key>
+    <array>
+        <integer>1</integer>
+    </array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
@@ -54,15 +58,27 @@
 	<key>BUNDLE_ID</key>
 	<string>shop.checkpulse.pulsebusiness</string>
 	<key>NSCameraUsageDescription</key>
-<string>Camera access is needed to scan QR codes for deal redemption</string>
+	<string>Camera access is needed to scan QR codes for deal redemption</string>
 
-<key>NSPhotoLibraryUsageDescription</key>
-<string>Photo library access is needed to upload images for your business deals</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Photo library access is needed to upload images for your business deals</string>
 
-<key>NSLocationWhenInUseUsageDescription</key>
-<string>Location access is needed to show your business location on the map</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Location access is needed to show your business location on the map</string>
 
-<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-<string>Location access helps customers find your business deals nearby</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Location access helps customers find your business deals nearby</string>
+
+	<key>CFBundleURLTypes</key>
+	<array>
+	<dict>
+		<key>CFBundleTypeRole</key>
+		<string>Editor</string>
+		<key>CFBundleURLSchemes</key>
+		<array>
+		<string>pulsebusiness</string>
+		</array>
+	</dict>
+	</array>
 </dict>
 </plist>

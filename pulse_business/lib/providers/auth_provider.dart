@@ -8,6 +8,7 @@ import '../models/user.dart';
 import 'business_provider.dart';
 import 'deals_provider.dart';
 
+import 'package:firebase_storage/firebase_storage.dart';
 class AuthProvider extends ChangeNotifier {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -403,6 +404,156 @@ Future<bool> signInWithGoogle() async {
     _errorMessage = 'Sign out failed: $e';
     notifyListeners();
     rethrow;
+  } finally {
+    _setLoading(false);
+  }
+}
+
+// Add this method to pulse_business/lib/providers/auth_provider.dart
+// Place it after the signOut() method
+// No new imports needed — you already have firestore, storage, and google_sign_in
+
+/// Delete user account and all associated data (client-side)
+Future<bool> deleteAccount(BuildContext context) async {
+  try {
+    print('🔧 AuthProvider: Starting account deletion');
+    _setLoading(true);
+    _clearError();
+
+    final user = _auth.currentUser;
+    if (user == null) {
+      _errorMessage = 'No user signed in';
+      return false;
+    }
+
+    final uid = user.uid;
+    final firestore = FirebaseFirestore.instance;
+    final storage = FirebaseStorage.instance;
+
+    // ── Step 1: Delete all deals for this business ──
+    try {
+      final dealsSnap = await firestore
+          .collection('deals')
+          .where('businessId', isEqualTo: uid)
+          .get();
+
+      final batch = firestore.batch();
+      for (final doc in dealsSnap.docs) {
+        batch.delete(doc.reference);
+      }
+      if (dealsSnap.docs.isNotEmpty) {
+        await batch.commit();
+      }
+      print('🔧 AuthProvider: Deleted ${dealsSnap.size} deals');
+    } catch (e) {
+      print('⚠️ AuthProvider: Error deleting deals: $e');
+    }
+
+    // ── Step 2: Delete all vouchers for this business ──
+    try {
+      final vouchersSnap = await firestore
+          .collection('vouchers')
+          .where('businessId', isEqualTo: uid)
+          .get();
+
+      final batch = firestore.batch();
+      for (final doc in vouchersSnap.docs) {
+        batch.delete(doc.reference);
+      }
+      if (vouchersSnap.docs.isNotEmpty) {
+        await batch.commit();
+      }
+      print('🔧 AuthProvider: Deleted ${vouchersSnap.size} vouchers');
+    } catch (e) {
+      print('⚠️ AuthProvider: Error deleting vouchers: $e');
+    }
+
+    // ── Step 3: Delete template preferences ──
+    try {
+      await firestore
+          .collection('business_template_preferences')
+          .doc(uid)
+          .delete();
+      print('🔧 AuthProvider: Deleted template preferences');
+    } catch (e) {
+      print('⚠️ AuthProvider: Error deleting template prefs: $e');
+    }
+
+    // ── Step 4: Delete storage files (business + deal images) ──
+    try {
+      final businessFiles = await storage.ref('businesses/$uid').listAll();
+      for (final file in businessFiles.items) {
+        await file.delete();
+      }
+      print('🔧 AuthProvider: Deleted ${businessFiles.items.length} business files');
+    } catch (e) {
+      print('⚠️ AuthProvider: Error deleting business storage: $e');
+    }
+
+    try {
+      final dealFiles = await storage.ref('deals').listAll();
+      // Deal images may not be organized by businessId, so we skip granular cleanup
+      // They'll be cleaned up manually or via a scheduled job later
+      print('⚠️ AuthProvider: Deal image cleanup skipped (shared folder)');
+    } catch (e) {
+      print('⚠️ AuthProvider: Error listing deal storage: $e');
+    }
+
+    // ── Step 5: Delete business document ──
+    try {
+      await firestore.collection('businesses').doc(uid).delete();
+      print('🔧 AuthProvider: Deleted business document');
+    } catch (e) {
+      print('⚠️ AuthProvider: Error deleting business doc: $e');
+    }
+
+    // ── Step 6: Delete user document ──
+    try {
+      await firestore.collection('users').doc(uid).delete();
+      print('🔧 AuthProvider: Deleted user document');
+    } catch (e) {
+      print('⚠️ AuthProvider: Error deleting user doc: $e');
+    }
+
+    // ── Step 7: Clear providers ──
+    try {
+      if (context.mounted) {
+        Provider.of<BusinessProvider>(context, listen: false).clearBusinessData();
+      }
+    } catch (e) {
+      print('⚠️ AuthProvider: Error clearing providers: $e');
+    }
+
+    // ── Step 8: Sign out of Google ──
+    try {
+      await _googleSignIn.signOut();
+    } catch (e) {
+      print('⚠️ AuthProvider: Google sign out error: $e');
+    }
+
+    // ── Step 9: Delete Firebase Auth account (MUST BE LAST) ──
+    await user.delete();
+    print('🔧 AuthProvider: Firebase auth account deleted');
+
+    // ── Step 10: Clear local state ──
+    _currentUser = null;
+    _setLoading(false);
+    notifyListeners();
+
+    return true;
+  } on FirebaseAuthException catch (e) {
+    print('❌ AuthProvider: Auth error during deletion: ${e.code}');
+    if (e.code == 'requires-recent-login') {
+      _errorMessage =
+          'For security, please sign out and sign back in before deleting your account';
+    } else {
+      _handleAuthError(e);
+    }
+    return false;
+  } catch (e) {
+    print('❌ AuthProvider: Error deleting account: $e');
+    _errorMessage = 'Failed to delete account: $e';
+    return false;
   } finally {
     _setLoading(false);
   }

@@ -11,8 +11,8 @@ import 'deals_provider.dart';
 
 import 'package:firebase_storage/firebase_storage.dart';
 class AuthProvider extends ChangeNotifier {
-  final FirebaseAuth _auth = DatabaseConfig.instance;
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = DatabaseConfig.instance;
   static final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   
   AppUser? _currentUser;

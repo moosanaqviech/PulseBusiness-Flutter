@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:go_router/go_router.dart';
+import '../config/database_config.dart';
 
 class StripeSuccessScreen extends StatefulWidget {
   const StripeSuccessScreen({Key? key}) : super(key: key);
@@ -29,7 +30,7 @@ class _StripeSuccessScreenState extends State<StripeSuccessScreen> {
       await Future.delayed(const Duration(seconds: 2));
 
       // Check if Stripe account is verified
-      final doc = await FirebaseFirestore.instance
+      final doc = await DatabaseConfig.instance
           .collection('businesses')
           .doc(userId)
           .get();

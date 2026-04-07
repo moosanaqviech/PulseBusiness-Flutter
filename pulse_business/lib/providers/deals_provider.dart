@@ -3,11 +3,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import '../models/deal.dart';
+import '../config/database_config.dart';
 
 enum DealFilter { all, active, expired, soldOut }
 
 class DealsProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = DatabaseConfig.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   
   List<Deal> _allDeals = [];

@@ -1,0 +1,77 @@
+# ============================================================================
+# Fastlane - Pulse Business (iOS)
+# ============================================================================
+# Place this file at: pulse_business/ios/fastlane/Fastfile
+# ============================================================================
+
+default_platform(:ios)
+
+platform :ios do
+
+  desc "Load App Store Connect API key"
+  lane :load_asc_api_key do
+    app_store_connect_api_key(
+      key_id: ENV["ASC_KEY_ID"],
+      issuer_id: ENV["ASC_ISSUER_ID"],
+      key_filepath: ENV["ASC_KEY_PATH"] || "fastlane/AuthKey.p8",
+      in_house: false
+    )
+  end
+
+  desc "Build release IPA"
+  lane :build do
+    load_asc_api_key
+
+    Dir.chdir("../..") do
+      sh("flutter", "clean")
+      sh("flutter", "pub", "get")
+    end
+
+    cocoapods(
+      podfile: "./Podfile",
+      repo_update: true
+    )
+
+    Dir.chdir("../..") do
+      sh("flutter", "build", "ipa", "--release", "--no-tree-shake-icons")
+    end
+
+    UI.success("✅ iOS IPA built successfully")
+  end
+
+  desc "Upload to TestFlight"
+  lane :beta do
+    load_asc_api_key
+    build
+
+    ipa_path = "/Users/asad/Projects/PulseBusiness-Flutter/pulse_business/build/ios/ipa/pulse_business.ipa"
+
+    upload_to_testflight(
+      ipa: ipa_path,
+      skip_waiting_for_build_processing: true,
+      distribute_external: false
+    )
+
+    UI.success("🚀 Pulse Business uploaded to TestFlight")
+  end
+
+  desc "Upload to App Store"
+  lane :release do
+    load_asc_api_key
+    build
+
+    ipa_path = "/Users/asad/Projects/PulseBusiness-Flutter/pulse_business/build/ios/ipa/pulse_business.ipa"
+
+    upload_to_app_store(
+      ipa: ipa_path,
+      submit_for_review: false,
+      automatic_release: false,
+      skip_metadata: true,
+      skip_screenshots: true,
+      precheck_include_in_app_purchases: false
+    )
+
+    UI.success("🚀 Pulse Business uploaded to App Store Connect")
+  end
+
+end

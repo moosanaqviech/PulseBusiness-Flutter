@@ -5,13 +5,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/deal_template.dart';
 import '../models/business.dart';
 import '../models/deal.dart';
+import '../config/database_config.dart';  
 
 class TemplateManager extends ChangeNotifier {
   static final TemplateManager _instance = TemplateManager._internal();
   factory TemplateManager() => _instance;
   TemplateManager._internal();
   
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = DatabaseConfig.instance;
   
   // Template registry
   static final Map<String, DealTemplate> _templates = {
@@ -460,7 +461,7 @@ class TemplateManager extends ChangeNotifier {
 
 // Template Repository for Firestore operations
 class TemplateRepository {
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final FirebaseFirestore _firestore = DatabaseConfig.instance;
   
   // Save custom template
   static Future<String> saveCustomTemplate(

@@ -1,9 +1,10 @@
 // lib/services/simple_database_setup.dart
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../config/database_config.dart';
 
 class SimpleDatabaseSetup {
-  static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static final FirebaseFirestore _firestore = DatabaseConfig.instance;
   static bool _isInitialized = false;
   
   /// Initialize template system for fresh app (no migration needed)

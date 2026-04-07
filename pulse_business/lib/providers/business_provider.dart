@@ -5,9 +5,10 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import '../models/business.dart';
+import '../config/database_config.dart';
 
 class BusinessProvider extends ChangeNotifier {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = DatabaseConfig.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   
   Business? _currentBusiness;

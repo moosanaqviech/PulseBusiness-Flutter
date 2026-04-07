@@ -5,12 +5,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/user.dart';
+import '../config/database_config.dart';
 import 'business_provider.dart';
 import 'deals_provider.dart';
 
 import 'package:firebase_storage/firebase_storage.dart';
 class AuthProvider extends ChangeNotifier {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth = DatabaseConfig.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   static final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
   
@@ -427,7 +428,7 @@ Future<bool> deleteAccount(BuildContext context) async {
     }
 
     final uid = user.uid;
-    final firestore = FirebaseFirestore.instance;
+    final firestore = DatabaseConfig.instance;
     final storage = FirebaseStorage.instance;
 
     // ── Step 1: Delete all deals for this business ──

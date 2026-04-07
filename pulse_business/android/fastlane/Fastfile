@@ -1,0 +1,51 @@
+# ============================================================================
+# Fastlane - Pulse Business (Android)
+# ============================================================================
+# Place this file at: pulse_business/android/fastlane/Fastfile
+# ============================================================================
+
+default_platform(:android)
+
+platform :android do
+
+  desc "Build release AAB"
+  lane :build do
+    Dir.chdir("../..") do
+      sh("flutter", "clean")
+      sh("flutter", "pub", "get")
+      sh("flutter", "build", "appbundle", "--release", "--no-tree-shake-icons")
+    end
+    UI.success("✅ Android AAB built successfully")
+  end
+
+  desc "Deploy to Google Play"
+  lane :deploy do |options|
+    track = options[:track] || "production"
+
+    build
+
+    upload_to_play_store(
+      track: track,
+      aab: "../build/app/outputs/bundle/release/app-release.aab",
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY"] || "fastlane/google-play-key.json",
+      package_name: "com.pulse.business",
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      release_status: "completed"
+    )
+
+    UI.success("🚀 Pulse Business deployed to Google Play (#{track})")
+  end
+
+  desc "Deploy to internal testing"
+  lane :internal do
+    deploy(track: "internal")
+  end
+
+  desc "Deploy to production"
+  lane :release do
+    deploy(track: "production")
+  end
+
+end
